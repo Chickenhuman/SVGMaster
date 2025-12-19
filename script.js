@@ -27,12 +27,21 @@ const ui = {
         noFill: document.getElementById('btnNoFill'),
         download: document.getElementById('btnDownload'),
         toggle: document.getElementById('btnToggleView'),
+	help: document.getElementById('btnHelp'), // [추가]
         toFront: document.getElementById('btnToFront'),
+	eraser: document.getElementById('toolEraser'), // [추가]
         toBack: document.getElementById('btnToBack'),
 	copy: document.getElementById('btnCopyCode'), // [추가]
+	toggleSidebar: document.getElementById('btnToggleSidebar'), // [추가]
         del: document.getElementById('btnDelete'),
 	group: document.getElementById('btnGroup'),     // [추가]
         ungroup: document.getElementById('btnUngroup'), // [추가]
+	alignLeft: document.getElementById('btnAlignLeft'),
+        alignCenter: document.getElementById('btnAlignCenter'),
+        alignRight: document.getElementById('btnAlignRight'),
+        alignTop: document.getElementById('btnAlignTop'),
+        alignMiddle: document.getElementById('btnAlignMiddle'),
+        alignBottom: document.getElementById('btnAlignBottom'),
     },
     inputs: {
         autoClose: document.getElementById('chkAutoClose'),
@@ -115,37 +124,102 @@ updateCode();
 // ==========================================
 // 4. 이벤트 리스너
 // ==========================================
-
-// (1) 툴 모드 전환
-['draw', 'select', 'paint', 'shape'].forEach(mode => {
+['draw', 'select', 'paint', 'shape', 'eraser'].forEach(mode => {
     const btn = document.querySelector(`.btn-tool[data-mode="${mode}"]`);
-    if(btn) btn.addEventListener('click', () => changeMode(mode));
+    if(btn) {
+        btn.addEventListener('click', (e) => {
+            // 도형 버튼 클릭 시 드롭다운 토글
+            if (mode === 'shape') {
+                const menu = document.getElementById('shapeSubMenu');
+                document.getElementById('alignSubMenu').classList.remove('show'); // 정렬 메뉴 끄기
+                
+                if (state.mode === 'shape') {
+                    menu.classList.toggle('show');
+                    return; 
+                } else {
+                    changeMode('shape');
+                    menu.classList.add('show');
+                    return;
+                }
+            }
+            
+            closeAllDropdowns();
+            changeMode(mode);
+        });
+    }
 });
 
-document.querySelectorAll('.btn-sub').forEach(btn => {
+// (2) [신규] 정렬 메뉴 토글 로직
+const btnAlignTool = document.getElementById('toolAlign');
+if (btnAlignTool) {
+    btnAlignTool.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const alignMenu = document.getElementById('alignSubMenu');
+        // 도형 메뉴가 열려있다면 닫기
+        document.getElementById('shapeSubMenu').classList.remove('show');
+        alignMenu.classList.toggle('show');
+    });
+}
+
+// (3) [수정] 도형 서브 메뉴 클릭 처리 (선택자를 명확하게 변경)
+document.querySelectorAll('#shapeSubMenu .btn-sub').forEach(btn => {
     btn.addEventListener('click', (e) => {
+        e.stopPropagation(); 
         state.currentShapeType = e.target.dataset.shape;
-        document.querySelectorAll('.btn-sub').forEach(b => b.classList.remove('active'));
+        
+        document.querySelectorAll('#shapeSubMenu .btn-sub').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
+        
         changeMode('shape');
+        closeAllDropdowns();
+    });
+});
+// (4) [신규] 정렬 메뉴 버튼 클릭 시 메뉴 닫기
+document.querySelectorAll('.btn-align').forEach(btn => {
+    btn.addEventListener('click', () => {
+        closeAllDropdowns();
+        // 실제 정렬 로직은 아래 ui.btns.alignLeft... 리스너에서 처리됨
     });
 });
 
+// (5) [수정] 화면 아무데나 클릭 시 드롭다운 닫기
+document.addEventListener('click', (e) => {
+    // 버튼이나 메뉴 내부를 클릭한 게 아니라면 모두 닫기
+    if (!e.target.closest('.dropdown-container')) {
+        closeAllDropdowns();
+    }
+});
+
+function closeAllDropdowns() {
+    document.getElementById('shapeSubMenu').classList.remove('show');
+    document.getElementById('alignSubMenu').classList.remove('show');
+}
+
+
+// [script.js] changeMode 함수 수정
 function changeMode(newMode) {
     finishDraw(false);
     deselect();
     state.mode = newMode;
 
     document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
+    
     const activeBtn = document.querySelector(`.btn-tool[data-mode="${newMode}"]`);
     if(activeBtn) activeBtn.classList.add('active');
-
-    ui.btns.shapeMenu.classList.toggle('hidden', newMode !== 'shape');
     
+    // 커서 설정
     if(newMode === 'draw' || newMode === 'shape') svg.style.cursor = 'crosshair';
     else if(newMode === 'paint') svg.style.cursor = 'cell';
+else if(newMode === 'eraser') {
+        // [수정] 20px 크기의 네모난 지우개 커서 (SVG Data URI 사용)
+        // fill="white": 흰색 채우기, stroke="%23333": 진한 회색 테두리
+        // 10 10: 마우스 포인트의 중심점을 사각형의 정중앙(10, 10)으로 설정
+        const eraserCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" fill="white" stroke="%23333" stroke-width="2"/></svg>') 10 10, auto`;
+        svg.style.cursor = eraserCursor;
+    }
     else svg.style.cursor = 'default';
 }
+
 // [추가] 그리드 / 스냅 / 리두 버튼 리스너
 // [script.js 수정] 4. 이벤트 리스너 섹션 - 속성 변경 부분 교체
 // ==========================================
@@ -158,6 +232,12 @@ if (ui.btns.snap) ui.btns.snap.addEventListener('click', toggleSnap);
 if (ui.btns.redo) ui.btns.redo.addEventListener('click', redo);
 if (ui.btns.copy) ui.btns.copy.addEventListener('click', copyCodeToClipboard);
 if (ui.inputs.text) ui.inputs.text.addEventListener('input', applyCodeFromTextarea); // [핵심] 역방향 동기화
+if (ui.btns.alignLeft) ui.btns.alignLeft.addEventListener('click', () => alignSelected('left'));
+if (ui.btns.alignCenter) ui.btns.alignCenter.addEventListener('click', () => alignSelected('center'));
+if (ui.btns.alignRight) ui.btns.alignRight.addEventListener('click', () => alignSelected('right'));
+if (ui.btns.alignTop) ui.btns.alignTop.addEventListener('click', () => alignSelected('top'));
+if (ui.btns.alignMiddle) ui.btns.alignMiddle.addEventListener('click', () => alignSelected('middle'));
+if (ui.btns.alignBottom) ui.btns.alignBottom.addEventListener('click', () => alignSelected('bottom'));
 
 
 // 1. 선 색상 (Color) 변경
@@ -284,6 +364,13 @@ ui.btns.toggle.addEventListener('click', () => {
 svg.addEventListener('mousedown', (e) => {
     const pt = getPoint(e);
 
+    // [추가] 지우개 모드: 클릭 시 동작 (채우기 삭제 vs 객체 삭제)
+    if (state.mode === 'eraser') {
+        state.isErasing = true; // 드래그 삭제 시작
+        handleEraserClick(e);   // 클릭 지우기 실행
+        return;
+    }
+
     // 변형 핸들/박스 클릭
     if (e.target === ui.inputs.resize) {
         state.action = 'resizing';
@@ -358,6 +445,14 @@ svg.addEventListener('mousedown', (e) => {
 svg.addEventListener('mousemove', (e) => {
     const pt = getPoint(e);
 
+    // [추가] 지우개 드래그 (닿는건 전부 삭제)
+    if (state.mode === 'eraser' && state.isErasing) {
+        // 마우스 위치에 있는 요소 찾기
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        handleEraserDrag(target);
+        return;
+    }
+
     if (state.action) {
         if (state.action === 'selecting') {
             handleMarqueeMove(pt);
@@ -381,6 +476,12 @@ svg.addEventListener('mousemove', (e) => {
 });
 
 window.addEventListener('mouseup', () => {
+    // [추가] 지우개 드래그 종료
+    if (state.mode === 'eraser') {
+        state.isErasing = false;
+        saveHistory(); // 지우기 동작이 끝나면 히스토리 저장
+        updateCode();
+    }
     if (state.action === 'selecting') {
         finishMarqueeSelection();
     }
@@ -408,20 +509,108 @@ svg.addEventListener('click', (e) => {
 });
 
 // [수정] 키보드 이벤트 (복사/붙여넣기 추가)
+// ==========================================
+// [수정됨] 키보드 단축키 이벤트 핸들러 (통합)
+// ==========================================
+// ==========================================
+// [수정됨] 키보드 단축키 이벤트 핸들러 (왼손 최적화)
+// ==========================================
 document.addEventListener('keydown', (e) => {
-    const isCtrl = e.metaKey || e.ctrlKey;
-    const key = e.key.toLowerCase();
+    // 1. 텍스트 입력 중일 때는 단축키 무시
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
-    if (isCtrl && key === 'z') { e.preventDefault(); undo(); }
-    if (isCtrl && key === 'y') { e.preventDefault(); redo(); } // [추가] Redo
+    const key = e.key.toLowerCase();
+    const isCtrl = e.metaKey || e.ctrlKey;
+    const isShift = e.shiftKey;
+
+    // --- [편집 단축키] ---
+    if (isCtrl && key === 'z') { e.preventDefault(); isShift ? redo() : undo(); }
+    if (isCtrl && key === 'y') { e.preventDefault(); redo(); }
     if (isCtrl && key === 'c') { e.preventDefault(); copy(); } 
     if (isCtrl && key === 'v') { e.preventDefault(); paste(); }
+    if (isCtrl && key === 's') { e.preventDefault(); downloadImage(); }
     
-    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); finishDraw(true); }
-    if (e.key === 'Escape') { finishDraw(false); deselect(); }
-    if (e.key === 'Delete') deleteSelected();
+    // 전체 선택 (Ctrl + A)
+    if (isCtrl && key === 'a') {
+        e.preventDefault();
+        const allEls = [];
+        Array.from(svg.children).forEach(child => {
+            if (['path', 'rect', 'circle', 'polygon', 'g'].includes(child.tagName) && 
+                child.id !== 'uiLayer' && child.id !== 'gridRect' && child.id !== 'marqueeRect' &&
+                !child.classList.contains('preview-line')) {
+                allEls.push(child);
+            }
+        });
+        selectElements(allEls);
+    }
+
+    // 그룹화 (Ctrl + G) / 해제 (Ctrl + Shift + G)
+    if (isCtrl && key === 'g') {
+        e.preventDefault();
+        isShift ? ungroupSelected() : groupSelected();
+    }
+
+    // --- [도구 단축키 (왼손 최적화)] ---
+    if (!isCtrl) {
+        switch (key) {
+            case 'v': document.getElementById('toolSelect').click(); break; // 선택
+            case 'd': document.getElementById('toolDraw').click(); break;   // [변경] Draw (P -> D)
+            case 'b': document.getElementById('toolPaint').click(); break;  // 페인트 (B)
+            case 'e': document.getElementById('toolEraser').click(); break; // [변경] Eraser (E)
+            case 'r': triggerShape('rect'); break;     // 사각형 (R)
+            case 'c': triggerShape('circle'); break;   // [변경] Circle (O -> C)
+            case 't': triggerShape('triangle'); break; // [변경] Triangle (T -> E)
+            
+            case '[': moveLayer('back'); break;
+            case ']': moveLayer('front'); break;
+            case 'delete': case 'backspace': deleteSelected(); break;
+            
+            case 'escape': 
+                finishDraw(false); deselect();
+                closeAllDropdowns();
+                break;
+            case ' ': e.preventDefault(); finishDraw(true); break;
+        }
+
+        // 옵션 토글
+        if (isShift && key === 'g') toggleGrid(); 
+        if (isShift && key === 's') toggleSnap(); 
+    }
+
+    // --- [방향키 미세 이동] ---
+    if (state.selectedEls.length > 0 && !state.isDrawing && !isCtrl) {
+        const step = isShift ? 10 : 1;
+        let dx = 0, dy = 0;
+        
+        if (key === 'arrowleft') dx = -step;
+        if (key === 'arrowright') dx = step;
+        if (key === 'arrowup') dy = -step;
+        if (key === 'arrowdown') dy = step;
+
+        if (dx !== 0 || dy !== 0) {
+            e.preventDefault();
+            state.selectedEls.forEach(el => {
+                if (el.id === 'gridRect') return;
+                const tf = parseTransform(el);
+                tf.x += dx; tf.y += dy;
+                tf.cx += dx; tf.cy += dy;
+                const str = `translate(${tf.x}, ${tf.y}) rotate(${tf.angle}, ${tf.cx}, ${tf.cy}) scale(${tf.scaleX}, ${tf.scaleY})`;
+                el.setAttribute('transform', str);
+            });
+            updateUIBox();
+        }
+    }
 });
 
+// [단축키 헬퍼 함수]
+function triggerShape(type) {
+    state.currentShapeType = type;
+    document.querySelectorAll('#shapeSubMenu .btn-sub').forEach(b => {
+        if(b.dataset.shape === type) b.classList.add('active');
+        else b.classList.remove('active');
+    });
+    changeMode('shape');
+}
 
 // ==========================================
 // 6. 기능별 함수 구현
@@ -1292,3 +1481,166 @@ function applyCodeFromTextarea(e) {
     // 대신 히스토리에는 저장
     saveHistory(); 
 }
+// [script.js] 파일 맨 마지막에 추가
+
+// 사이드바 토글 기능
+if (ui.btns.toggleSidebar) {
+    ui.btns.toggleSidebar.addEventListener('click', () => {
+        const sidebar = document.querySelector('.sidebar');
+        sidebar.classList.toggle('collapsed');
+        
+        // 아이콘 방향 바꾸기 (◀ -> ▶)
+        const isClosed = sidebar.classList.contains('collapsed');
+        ui.btns.toggleSidebar.textContent = isClosed ? "▶" : "◀";
+    });
+}
+
+// --- [정렬 기능 (Alignment)] ---
+
+function alignSelected(type) {
+    // 2개 이상 선택되어야 정렬 의미가 있음
+    if (state.selectedEls.length < 2) return;
+
+    // 1. 전체 선택 영역의 경계(Bounding Box) 계산
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    // 각 요소의 현재 위치와 크기 파악
+    const bounds = state.selectedEls.map(el => {
+        const rect = el.getBoundingClientRect();
+        const svgRect = svg.getBoundingClientRect();
+        // SVG 기준 상대 좌표
+        const x = rect.left - svgRect.left;
+        const y = rect.top - svgRect.top;
+        const w = rect.width;
+        const h = rect.height;
+
+        // 전체 그룹의 Min/Max 갱신
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x + w > maxX) maxX = x + w;
+        if (y + h > maxY) maxY = y + h;
+
+        return { el, x, y, w, h };
+    });
+
+    const centerX = minX + (maxX - minX) / 2;
+    const centerY = minY + (maxY - minY) / 2;
+
+    // 2. 각 요소를 목표 위치로 이동
+    bounds.forEach(item => {
+        let dx = 0;
+        let dy = 0;
+
+        switch (type) {
+            case 'left':   dx = minX - item.x; break;
+            case 'center': dx = centerX - (item.x + item.w / 2); break;
+            case 'right':  dx = maxX - (item.x + item.w); break;
+            case 'top':    dy = minY - item.y; break;
+            case 'middle': dy = centerY - (item.y + item.h / 2); break;
+            case 'bottom': dy = maxY - (item.y + item.h); break;
+        }
+
+        // 3. Transform에 이동값 누적 적용
+        if (dx !== 0 || dy !== 0) {
+            const tf = parseTransform(item.el);
+            // 기존 위치에서 차이(dx, dy)만큼 더 이동
+            const newX = tf.x + dx;
+            const newY = tf.y + dy;
+            
+            // 회전/스케일은 유지하고 위치만 변경
+            // (주의: 회전 중심점(cx,cy)도 같이 움직여야 제자리 회전이 유지됨)
+            const newCx = tf.cx + dx;
+            const newCy = tf.cy + dy;
+
+            const str = `translate(${newX}, ${newY}) rotate(${tf.angle}, ${newCx}, ${newCy}) scale(${tf.scaleX}, ${tf.scaleY})`;
+            item.el.setAttribute('transform', str);
+        }
+    });
+
+    saveHistory();
+    updateCode();
+    updateUIBox(); // 선택 박스 갱신
+}
+
+// [script.js] 맨 아래 기능 구현 섹션에 추가
+
+// --- [지우개 기능] ---
+
+function handleEraserClick(e) {
+    const el = e.target;
+    
+    // 보호해야 할 요소들 (그리드, UI 레이어 등)은 무시
+    if (['uiLayer', 'gridRect', 'marqueeRect', 'selectionBox', 'handleResize', 'handleRotate', 'rotateLine'].includes(el.id) || 
+        el.tagName === 'svg' || 
+        el.parentNode.id === 'uiLayer') return;
+
+    // 1. 채우기가 있는 경우 -> 채우기만 제거
+    const fill = el.getAttribute('fill');
+    if (fill && fill !== 'none' && fill !== 'transparent') {
+        el.setAttribute('fill', 'none');
+        updateCode();
+        return; // 선은 남겨둠
+    }
+
+    // 2. 채우기가 없는 경우 (선만 있거나 이미 지워짐) -> 객체 삭제
+    el.remove();
+    deselect(); // 혹시 선택되어 있던거라면 선택 해제
+    updateCode();
+}
+
+function handleEraserDrag(el) {
+    if (!el) return;
+
+    // 보호해야 할 요소 체크
+    if (['uiLayer', 'gridRect', 'marqueeRect', 'selectionBox', 'handleResize', 'handleRotate', 'rotateLine'].includes(el.id) || 
+        el.tagName === 'svg' || 
+        el.parentNode.id === 'uiLayer' ||
+        el.classList.contains('preview-line')) return;
+
+    // 드래그 중에는 묻지도 따지지도 않고 삭제
+    if (['path', 'rect', 'circle', 'polygon', 'g'].includes(el.tagName)) {
+        el.remove();
+        deselect();
+        // 드래그 중에는 성능을 위해 updateCode()를 매번 호출하지 않고 mouseup에서 처리해도 되지만, 
+        // 즉각적인 반응을 위해 여기서 호출 (느려지면 mouseup으로 이동)
+        updateCode(); 
+    }
+}
+
+// [script.js] 파일 맨 마지막에 추가
+
+// --- [도움말 모달 제어] ---
+const modal = document.getElementById('helpModal');
+const btnClose = document.getElementById('btnCloseHelp');
+const btnOk = document.getElementById('btnOkHelp');
+
+function openHelp() {
+    modal.classList.add('show');
+}
+
+function closeHelp() {
+    modal.classList.remove('show');
+}
+
+// 1. 버튼 클릭 이벤트
+if (ui.btns.help) ui.btns.help.addEventListener('click', openHelp);
+if (btnClose) btnClose.addEventListener('click', closeHelp);
+if (btnOk) btnOk.addEventListener('click', closeHelp);
+
+// 2. 배경 클릭 시 닫기
+window.addEventListener('click', (e) => {
+    if (e.target === modal) closeHelp();
+});
+
+// 3. F1 키로 도움말 열기 (keydown 리스너에 추가해도 되고, 별도로 해도 됨)
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'F1') {
+        e.preventDefault();
+        openHelp();
+    }
+    // ESC로 닫기
+    if (e.key === 'Escape' && modal.classList.contains('show')) {
+        closeHelp();
+    }
+});
