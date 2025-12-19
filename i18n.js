@@ -84,6 +84,8 @@ const translations = {
         h_tip_2: "역방향 편집: 코드창을 수정하면 캔버스에 즉시 반영됩니다.",
 t_code: "코드창 토글 (Script)", 
 // [추가]
+// [추가] 저작권 문구
+msg_copyright: "© 2025 ChickenHuman. All rights reserved."
     },
 
     en: {
@@ -161,7 +163,10 @@ t_code: "코드창 토글 (Script)",
         h_tip_1: "Nudge: Use Arrow keys to move 1px (Shift: 10px)",
         h_tip_2: "Reverse Sync: Edit code below to update canvas instantly.",
 t_code: "Toggle Code View",   // [추가]   
- },
+// [추가]
+msg_copyright: "© 2025 ChickenHuman. All rights reserved."
+    },
+
     ja: {
         properties: "属性",
         strokeColor: "線の色",
@@ -237,6 +242,7 @@ t_code: "Toggle Code View",   // [추가]
         h_tip_1: "微調整: 矢印キーで1px移動 (Shift: 10px)",
         h_tip_2: "逆同期: 下のコードを編集するとキャンバスに即座に反映されます。",
 t_code: "コード表示切替",      // [추가]
+msg_copyright: "© 2025 ChickenHuman. All rights reserved."
     }
 };
 

@@ -13,7 +13,8 @@ body {
     user-select: none; 
     margin: 0; 
     box-sizing: border-box;
-    
+    height: 100vh;
+    overflow: hidden; 
 }
 
 /* ============================
@@ -24,8 +25,8 @@ body {
     gap: 20px; 
     max-width: 1600px; 
     margin: 0 auto; 
-    height: 90vh; 
-    flex-wrap: nowrap; /* 기본은 가로 배치 */
+    height: calc(100vh - 40px); 
+    flex-wrap: nowrap; 
 }
 
 /* ============================
@@ -41,86 +42,57 @@ body {
     display: flex; 
     flex-direction: column; 
     gap: 15px; 
+    flex-shrink: 0;
+    
+    transition: width 0.3s ease, padding 0.3s ease, margin 0.3s ease, opacity 0.3s;
     overflow-y: auto; 
-    flex-shrink: 0; /* 사이드바 크기 줄어들지 않게 고정 */
+    overflow-x: hidden;
+    white-space: nowrap;
 }
 
 .sidebar h3 { margin: 0 0 10px 0; color: #333; }
 
-/* 툴 버튼 그리드 */
-.tool-group { 
-    display: grid; 
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 8px; 
+/* 사이드바 접기 상태 */
+.sidebar.collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0;
+    overflow: hidden;
 }
 
+/* 툴 버튼 및 입력창 스타일 */
 .btn-tool { 
-    padding: 12px; 
-    border: 1px solid var(--border); 
-    background: #f9f9f9; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: 0.2s; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 6px; 
-    font-weight: 600; 
-    font-size: 14px; 
-    color: #555;
+    padding: 12px; border: 1px solid var(--border); background: #f9f9f9; 
+    border-radius: 8px; cursor: pointer; transition: 0.2s; 
+    display: flex; align-items: center; justify-content: center; 
+    font-weight: 600; font-size: 14px; color: #555;
 }
 .btn-tool:hover { background: #eef5ff; border-color: var(--primary); }
 .btn-tool.active { 
-    background: var(--primary); 
-    color: white; 
-    border-color: var(--primary); 
+    background: var(--primary); color: white; border-color: var(--primary); 
     box-shadow: 0 2px 5px rgba(74, 144, 226, 0.3);
 }
 
-/* 도형 서브 메뉴 (삼각형, 원, 사각형) */
-.tool-sub-group {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-    background: #f0f2f5;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #eee;
-    margin-top: -5px; /* 툴 그룹 바로 아래 붙기 */
-}
 .btn-sub {
-    padding: 8px;
-    border: 1px solid #ccc;
-    background: #fff;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
+    padding: 8px; border: 1px solid #ccc; background: #fff; 
+    border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;
 }
 .btn-sub:hover { background: #fff; border-color: var(--primary); color: var(--primary); }
 .btn-sub.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-.hidden { display: none !important; }
-
-/* 속성 패널 */
 .properties-panel { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; }
 .control-row { display: flex; flex-direction: column; gap: 8px; }
 .control-row label { 
     font-size: 13px; color: #444; font-weight: 600; 
     display: flex; justify-content: space-between; align-items: center; 
 }
-
 .input-group { display: flex; gap: 8px; align-items: center; }
 
 input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--primary); }
-input[type="color"] { 
-    width: 40px; height: 35px; border: none; padding: 0; 
-    background: none; cursor: pointer; border-radius: 4px; 
-}
-input[type="text"], select { 
-    padding: 8px; border: 1px solid #ccc; border-radius: 6px; 
-    width: 100%; font-size: 13px; box-sizing: border-box;
-}
+input[type="color"] { width: 40px; height: 35px; border: none; padding: 0; background: none; cursor: pointer; border-radius: 4px; }
+input[type="text"], select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 13px; box-sizing: border-box; }
 
 .action-btn { 
     background: #fff; border: 1px solid #ccc; padding: 10px; 
@@ -128,440 +100,175 @@ input[type="text"], select {
     width: 100%; transition: 0.2s; font-weight: 500;
 }
 .action-btn:hover { background: #f5f5f5; border-color: #bbb; }
-.action-btn.primary { 
-    background: var(--primary); color: white; border: none; 
-    font-weight: bold; box-shadow: 0 4px 6px rgba(74, 144, 226, 0.2);
-}
-.action-btn.primary:hover { background: #357abd; }
+.action-btn.primary { background: var(--primary); color: white; border: none; font-weight: bold; box-shadow: 0 4px 6px rgba(74, 144, 226, 0.2); }
 .action-btn.primary:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
 /* ============================
-   3. 캔버스 영역
+   3. 캔버스 영역 & 상단 툴바
    ============================ */
 .canvas-area {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: visible !important; /* [핵심] hidden이나 auto를 visible로 변경 */
+    display: flex; flex-direction: column; position: relative;
+    flex: 1; min-width: 0; min-height: 0; overflow: hidden;
 }
 
 #svg-wrapper { 
     box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
-    line-height: 0; 
-    background-color: white; /* SVG 자체 배경 */
+    background-color: white; 
+    height: 100%; 
 }
 
-/* SVG 내부 요소 스타일 */
-#svg-wrapper svg { cursor: default; }
-#svg-wrapper svg path, 
-#svg-wrapper svg rect, 
-#svg-wrapper svg circle, 
-#svg-wrapper svg polygon {
-    pointer-events: all; /* 채우기 없어도 클릭 감지 */
-    cursor: pointer;
-}
-.preview-line { stroke: #ff4757; stroke-width: 1.5; stroke-dasharray: 4, 4; pointer-events: none; opacity: 0.7; }
-.selection-highlight { outline: 2px dashed var(--primary); outline-offset: 4px; }
-.cursor-move { cursor: move !important; }
+/* [style.css] 3. 캔버스 영역 섹션 내부에 추가 */
 
-/* ============================
-   4. 코드 뷰어 영역
-   ============================ */
-.code-area { 
-    width: 320px; 
-    min-width: 280px;
-    display: flex; 
-    flex-direction: column; 
-    flex-shrink: 0;
-}
-.code-view { 
-    flex: 1; 
-    padding: 15px; 
-    background: var(--code-bg); 
-    color: #abb2bf; 
-    border-radius: 12px; 
-    overflow-y: auto; 
-    font-family: 'Consolas', 'Monaco', monospace; 
-    font-size: 12px; 
-    line-height: 1.6;
-    white-space: pre-wrap; 
-    word-break: break-all;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.code-line { display: block; padding: 2px 4px; border-radius: 2px; }
-.code-line:hover { background: rgba(255,255,255,0.1); }
-
-
-/* ============================
-   5. 반응형 레이아웃 (핵심)
-   ============================ */
-/* [style.css] 맨 아래 @media 부분 전체 교체 */
-
-/* ============================
-   5. 반응형 레이아웃 (모바일/태블릿)
-   ============================ */
-/* [style.css] 맨 마지막의 반응형 섹션 전체 교체 */
-
-/* ============================
-   5. 반응형 레이아웃 (모바일/태블릿)
-   ============================ */
-@media (max-width: 1000px) {
-    /* 1. 메인 컨테이너: 겹쳐서 배치하도록 변경 */
-    .main-container {
-        display: block;      /* Flex 해제 */
-        position: relative;  
-        overflow: hidden;    
-    }
-
-    /* 2. 캔버스 영역: 화면 전체 꽉 채우기 */
-    .canvas-area {
-        width: 100% !important;
-        height: 100% !important;
-        position: absolute; 
-        top: 0; left: 0;
-        z-index: 1;          /* 가장 아래에 깔림 */
-    }
-
-    /* 3. 사이드바: 왼쪽에서 나오는 서랍 (Drawer) */
-    .sidebar {
-        position: absolute;
-        top: 50px;           /* 상단바 아래부터 */
-        left: 0;
-        bottom: 0;
-        width: 280px;        
-        z-index: 1002;       /* 캔버스보다 위에 */
-        
-        box-shadow: 2px 0 15px rgba(0,0,0,0.2);
-        border-right: 1px solid #ddd;
-        transition: transform 0.3s ease;
-        
-        /* PC 스타일 덮어쓰기 */
-        display: flex !important;
-        height: auto !important;
-    }
-
-    /* 사이드바 숨김 (화면 왼쪽 밖으로 이동) */
-    .sidebar.collapsed {
-        transform: translateX(-100%); 
-        
-        /* PC용 'width: 0' 스타일 무효화 */
-        width: 280px !important;      
-        padding: 20px !important;     
-        opacity: 1 !important;        
-    }
-    
-    /* 사이드바가 열려있을 때 배경 반투명 처리 */
-    .sidebar:not(.collapsed) {
-        background-color: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(5px);
-    }
-
-    /* 4. 코드창: 오른쪽에서 나오는 서랍 (Drawer) */
-    .code-area {
-        display: flex !important; 
-        position: absolute;
-        top: 50px;            
-        right: 0;             
-        bottom: 0;
-        width: 300px;         
-        z-index: 1001;        
-        
-        box-shadow: -2px 0 15px rgba(0,0,0,0.2);
-        border-left: 1px solid #ddd;
-        transition: transform 0.3s ease;
-        background-color: rgba(40, 44, 52, 0.95); 
-        backdrop-filter: blur(5px);
-    }
-
-    /* 코드창 숨김 (화면 오른쪽 밖으로 이동) */
-    .code-area.collapsed {
-        transform: translateX(100%); 
-        display: flex !important;    
-    }
-}
-    /* 5. 모바일에서 사이드바 토글 로직 (PC와 반대) */
-    /* PC에서는 .collapsed가 붙으면 '숨김'이었지만,
-       모바일에서는 기본적으로 보여주고, .collapsed가 붙으면 숨깁니다.
-       (사용자가 편하게 느끼도록 JS 수정 없이 CSS로만 처리)
-    */
-    .sidebar.collapsed {
-        transform: translateX(-100%); /* 화면 왼쪽 밖으로 숨김 */
-        width: 280px !important;      /* 너비가 0이 되지 않도록 고정 */
-        padding: 20px !important;     /* 패딩 유지 */
-        opacity: 1 !important;        /* 투명도 유지 (이동으로 숨기니까) */
-    }
-    
-    /* 사이드바가 열려있을 때 캔버스 가리지 않게 배경색 확보 */
-    .sidebar:not(.collapsed) {
-        background-color: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(5px);
-    }
-}
-/* [style.css] 맨 아래에 추가 */
-
-/* 변형 핸들 스타일 */
-#handleResize {
+.preview-line {
+    stroke: #ff4757;       /* 빨간색 (var(--accent-red)) */
     stroke-width: 1.5px;
-    transition: fill 0.2s;
-}
-#handleResize:hover {
-    fill: #4a90e2; 
-}
-
-#handleRotate {
-    stroke-width: 1.5px;
-}
-#handleRotate:hover {
-    fill: #ff4757;
-}
-#handleRotate:active {
-    cursor: grabbing !important;
+    stroke-dasharray: 4 4; /* 점선 효과 */
+    pointer-events: none;  /* 마우스 이벤트가 선에 가려지지 않도록 설정 */
+    display: none;         /* 기본적으로 숨김 (그리기 할 때만 JS가 block으로 변경) */
 }
 
-/* [style.css] 맨 아래에 추가하세요 */
-
-/* --- 1. 사이드바 접기 애니메이션 --- */
-.sidebar {
-    transition: width 0.3s ease, padding 0.3s ease, margin 0.3s ease, opacity 0.3s;
-    
-    /* [수정] hidden을 auto로 변경하여 스크롤 되살림 */
-    overflow-y: auto;    /* 세로 스크롤 허용 */
-    overflow-x: hidden;  /* 가로 스크롤 방지 */
-    
-    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
-}
-
-/* 사이드바가 닫혔을 때 적용될 클래스 */
-.sidebar.collapsed {
-    width: 0 !important;
-    min-width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    opacity: 0;
-    overflow: hidden; /* 닫혔을 때는 내용물 숨김 */
-}
-/* --- 2. 상단 툴바 (Top Bar) 스타일 --- */
-.canvas-area {
-    display: flex;
-    flex-direction: column; /* 세로 배치 (툴바 - 캔버스 순) */
-    position: relative;
-}
-
-/* 2. 상단 툴바: 스크롤을 없애고 드롭다운이 덮어씌워지도록 설정 */
+/* 상단 툴바 */
 .top-bar {
-    /* [핵심] 높이 제한을 풀고 줄바꿈 허용 */
-    height: auto;          
-    min-height: 50px;      
-    flex-wrap: wrap;       /* 공간 부족하면 다음 줄로 넘김 */
-    
-    padding: 8px 15px;     /* 위아래 여백을 줘서 2줄 될 때 답답하지 않게 */
-    gap: 8px;              /* 버튼 사이 간격 */
-    
-    /* 기존 속성 유지 */
-    background: #ffffff;
-    border-bottom: 1px solid #ddd;
-    display: flex;
-    align-items: center;
-    border-radius: 12px 12px 0 0;
-    flex-shrink: 0;        /* 부모 컨테이너 크기가 줄어도 찌그러지지 않음 */
-    z-index: 100;
-    
-    overflow: visible;     /* 드롭다운 메뉴가 잘리지 않게 */
-    white-space: normal;   /* 텍스트 줄바꿈 허용 */
+    height: auto; min-height: 50px; flex-wrap: wrap;
+    padding: 8px 15px; gap: 8px;
+    background: #ffffff; border-bottom: 1px solid #ddd;
+    display: flex; align-items: center; border-radius: 12px 12px 0 0;
+    flex-shrink: 0; z-index: 100;
+    overflow: visible; white-space: normal;
 }
 
 .btn-icon {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    width: 32px;
-    height: 32px;
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: 0.2s;
+    background: transparent; border: 1px solid transparent; border-radius: 4px;
+    width: 32px; height: 32px; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center; transition: 0.2s;
 }
+.btn-icon:hover { background-color: #f0f0f0; border-color: #ddd; }
+.btn-icon.active { background-color: var(--primary); color: white; }
 
-.btn-icon:hover {
-    background-color: #f0f0f0;
-    border-color: #ddd;
-}
+.v-divider { width: 1px; height: 24px; background-color: #ddd; margin: 0 8px; }
 
-.btn-icon.active {
-    background-color: var(--primary);
-    color: white;
-}
-
-.v-divider {
-    width: 1px;
-    height: 20px;
-    background-color: #eee;
-    margin: 0 5px;
-}
-/* [style.css] 맨 아래에 추가 */
-
-/* 구분선 스타일 조정 */
-.v-divider {
-    height: 24px;
-    background-color: #ddd;
-    margin: 0 8px;
-}
-
-/* 드롭다운 컨테이너 (도형 도구용) */
-.dropdown-container {
-    position: relative;
-    display: inline-block;
-}
-
-/* 드롭다운 메뉴 (숨겨진 상태) */
+/* 드롭다운 메뉴 */
+.dropdown-container { position: relative; display: inline-block; }
 .dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 5px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 1000;
-    min-width: 100px;
-    flex-direction: column;
-    padding: 5px;
+    display: none; position: absolute; top: 100%; left: 0; margin-top: 5px;
+    background: white; border: 1px solid #ddd; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;
+    min-width: 100px; flex-direction: column; padding: 5px;
+}
+.dropdown-menu.show { display: flex; }
+.dropdown-menu .btn-sub { text-align: left; border: none; background: none; width: 100%; padding: 8px 12px; }
+
+/* ============================
+   4. 코드 뷰어 영역 (PC 기본)
+   ============================ */
+.code-area { 
+    width: 320px; min-width: 280px; display: flex; flex-direction: column; flex-shrink: 0; min-height: 0;
+}
+.code-view { 
+    flex: 1; padding: 15px; background: var(--code-bg); color: #abb2bf; 
+    border-radius: 0 0 12px 12px; 
+    overflow-y: auto; font-family: 'Consolas', monospace; font-size: 12px; 
+    line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* 드롭다운 보임 상태 */
-.dropdown-menu.show {
-    display: flex;
-}
+/* 변형 핸들 (캔버스 내부) */
+#handleResize { stroke-width: 1.5px; transition: fill 0.2s; }
+#handleResize:hover { fill: #4a90e2; }
+#handleRotate:hover { fill: #ff4757; }
 
-.dropdown-menu .btn-sub {
-    text-align: left;
-    border: none;
-    background: none;
-    width: 100%;
-    padding: 8px 12px;
-    border-radius: 4px;
-}
-.dropdown-menu .btn-sub:hover {
-    background-color: #f5f5f5;
-    color: var(--primary);
-}
-.dropdown-menu .btn-sub.active {
-    background-color: var(--primary);
-    color: white;
-}
-
-/* [style.css] 맨 아래에 추가 (도움말 모달 스타일) */
-
-/* 1. 배경 (Overlay) */
+/* 도움말 모달 스타일 */
 .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.5); /* 반투명 검정 */
-    display: none; /* 기본 숨김 */
-    justify-content: center;
-    align-items: center;
-    z-index: 2000; /* 최상단 */
-    backdrop-filter: blur(2px);
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5); display: none;
+    justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(2px);
 }
 .modal-overlay.show { display: flex; }
-
-/* 2. 모달 창 (Window) */
 .modal-window {
-    background: white;
-    width: 600px;
-    max-width: 90%;
-    max-height: 85vh;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    animation: popIn 0.3s ease;
+    background: white; width: 600px; max-width: 90%; max-height: 85vh;
+    border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column; overflow: hidden; animation: popIn 0.3s ease;
 }
-
-@keyframes popIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-/* 3. 내부 레이아웃 */
-.modal-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
-}
-.modal-header h2 { margin: 0; font-size: 18px; color: #333; }
-.btn-close {
-    background: none; border: none; font-size: 24px; cursor: pointer; color: #999;
-}
-.btn-close:hover { color: #ff4757; }
-
-.modal-content {
-    padding: 20px;
-    overflow-y: auto; /* 내용 길면 스크롤 */
-    line-height: 1.6;
-    color: #444;
-}
-
-.modal-footer {
-    padding: 10px 20px;
-    border-top: 1px solid #eee;
-    text-align: right;
-    background: #f8f9fa;
-}
-
-/* 4. 단축키 테이블 스타일 */
-.shortcut-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 13px;
-}
+@keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; }
+.btn-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+.modal-content { padding: 20px; overflow-y: auto; }
+.modal-footer { padding: 10px 20px; border-top: 1px solid #eee; text-align: right; background: #f8f9fa; }
+.shortcut-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
 .shortcut-table th { background: #eee; padding: 8px; text-align: left; }
 .shortcut-table td { border-bottom: 1px solid #f0f0f0; padding: 8px; }
-.shortcut-table tr:last-child td { border-bottom: none; }
+kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; padding: 2px 6px; font-weight: bold; color: #333; }
+.help-section h3 { border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 5px; color: var(--primary); }
 
-/* 키보드 키 모양 꾸미기 */
-kbd {
-    background-color: #f7f7f7;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.2);
-    padding: 2px 6px;
-    font-family: monospace;
-    font-size: 11px;
-    font-weight: bold;
-    color: #333;
+/* =========================================================
+   [반응형] 모바일/태블릿 설정 (1000px 이하)
+   ========================================================= */
+
+/* 1. PC 화면 기본 설정 */
+.btn-close-code { display: none; } /* PC에선 닫기 버튼 숨김 */
+.code-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+}
+.code-controls { display: flex; gap: 5px; }
+
+/* 2. 모바일/태블릿 화면 설정 */
+@media (max-width: 1000px) {
+    /* 레이아웃 겹침 모드 */
+    .main-container { display: block; position: relative; overflow: hidden; }
+    .canvas-area { width: 100% !important; height: 100% !important; position: absolute; top: 0; left: 0; z-index: 1; }
+
+    /* 사이드바 (왼쪽 서랍) */
+    .sidebar {
+        position: absolute; top: 50px; left: 0; bottom: 0; width: 280px !important;
+        z-index: 1002; box-shadow: 2px 0 15px rgba(0,0,0,0.2); border-right: 1px solid #ddd;
+        transition: transform 0.3s ease; display: flex !important; height: auto !important;
+        transform: translateX(0); opacity: 1 !important; padding: 20px !important;
+    }
+    .sidebar.collapsed { transform: translateX(-100%); } /* 숨김 */
+    .sidebar:not(.collapsed) { background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); }
+
+    /* 코드창 (오른쪽 서랍) */
+    .code-area {
+        display: flex !important; position: absolute; top: 50px; right: 0; bottom: 0; width: 300px;
+        z-index: 1001; box-shadow: -2px 0 15px rgba(0,0,0,0.2); border-left: 1px solid #ddd;
+        transition: transform 0.3s ease; background-color: rgba(40, 44, 52, 0.95); backdrop-filter: blur(5px);
+        flex-direction: column;
+    }
+    .code-area.collapsed { transform: translateX(100%); } /* 숨김 */
+
+    /* 모바일용 코드창 헤더 및 버튼 (가로 배치) */
+    .code-header {
+        display: flex; flex-direction: column; gap: 10px; padding: 15px;
+        background: #f8f9fa; border-bottom: 1px solid #ddd; margin-bottom: 0;
+    }
+    .code-header h3 { margin: 0; font-size: 16px; color: #333 !important; }
+
+    /* 버튼 컨테이너 가로 정렬 */
+    .code-controls { display: flex; flex-direction: row; gap: 8px; width: 100%; }
+    .code-controls .action-btn {
+        flex: 1; width: auto !important; margin: 0; padding: 8px 0;
+        display: flex; justify-content: center; align-items: center; font-size: 13px;
+    }
+
+    /* 닫기(X) 버튼 스타일 */
+    .btn-close-code {
+        display: flex !important; align-items: center; justify-content: center;
+        background: #fff; border: 1px solid #ccc; border-radius: 6px;
+        color: #555; cursor: pointer; width: 40px; flex-shrink: 0; font-size: 20px;
+    }
+    .btn-close-code:hover { background: #ffecec; border-color: #ff4757; color: #ff4757; }
+    
+    .code-view { margin-top: 0; border-radius: 0; border-top: none; }
 }
 
-.help-section { margin-bottom: 25px; }
-.help-section h3 { 
-    border-bottom: 2px solid var(--primary); 
-    display: inline-block; 
-    padding-bottom: 5px; 
-    margin-bottom: 10px;
-    color: var(--primary);
-    font-size: 16px;
-}
-.intro { font-size: 14px; color: #666; margin-bottom: 20px; text-align: center; }
-
-/* [style.css] 맨 아래에 추가 */
-
-/* 코드창 접기 (숨김 처리) */
-.code-area.collapsed {
-    display: none !important;
+/* 3. PC 전용 (1001px 이상) */
+@media (min-width: 1001px) {
+    /* PC에서는 코드창을 접으면 아예 공간을 차지하지 않음 */
+    .code-area.collapsed { display: none !important; }
 }
 
-/* 코드창이 사라졌을 때 캔버스가 전체를 차지하도록 보장 */
-.main-container:has(.code-area.collapsed) .canvas-area {
-    flex: 1;
-    width: 100%;
+/* 저작권 표시 (Footer) */
+.app-footer {
+    margin-top: auto; padding: 20px 0 5px 0;
+    border-top: 1px solid #eee; text-align: center; color: #aaa; font-size: 11px;
 }

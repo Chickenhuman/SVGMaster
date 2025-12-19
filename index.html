@@ -67,10 +67,18 @@
                 <button class="action-btn primary" id="btnFinish" data-i18n="btnFinish" disabled>✔️ 완료 (Space)</button>
             </div>
         </div>
+
+        <div class="app-footer">
+            <small data-i18n="msg_copyright">© 2025 ChickenHuman. All rights reserved.</small>
+        </div>
     </div>
 
     <div class="canvas-area">
         <div class="top-bar">
+            <div class="app-title">
+                <span>SVG</span> Master
+            </div>
+            <div class="v-divider"></div>
             <button id="btnToggleSidebar" class="btn-icon" data-i18n-title="t_sidebar" title="사이드바 토글">◀</button>
             <div class="v-divider"></div>
             
@@ -116,18 +124,19 @@
             <button class="btn-icon" id="btnToFront" data-i18n-title="t_front" title="맨 앞으로">🔼</button>
             <button class="btn-icon" id="btnToBack" data-i18n-title="t_back" title="맨 뒤로">🔽</button>
             <button class="btn-icon" id="btnDelete" data-i18n-title="t_delete" title="삭제" style="color:var(--accent-red);">🗑️</button>
-<div class="v-divider"></div>
+            
+            <div class="v-divider"></div>
 
-<button class="btn-icon" id="btnDownload" data-i18n-title="btnDownload" title="이미지 저장">💾</button>
+            <button class="btn-icon" id="btnDownload" data-i18n-title="btnDownload" title="이미지 저장">💾</button>
 
-<div class="v-divider"></div>
+            <div class="v-divider"></div>
             
             <button class="btn-icon" id="btnHelp" data-i18n-title="t_help" title="도움말">❓</button>
             <div class="v-divider"></div>
+            
+            <button class="btn-icon active" id="btnToggleCode" data-i18n-title="t_code" title="코드창 토글">📜</button> 
 
-<button class="btn-icon active" id="btnToggleCode" data-i18n-title="t_code" title="코드창 토글">📜</button> 
-
-<div class="v-divider"></div>
+            <div class="v-divider"></div>
 
             <select id="langSelect" class="btn-tool" style="width: auto; padding: 2px 5px;">
                 <option value="ko">KO</option>
@@ -156,11 +165,12 @@
     </div>
 
     <div class="code-area">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 data-i18n="codeTitle" style="color:white; margin:0;">SVG Code</h3>
-            <div style="display:flex; gap:5px;"> 
-                <button id="btnCopyCode" class="action-btn" data-i18n="btnCopy" style="width:auto; padding:5px 10px; font-size:11px;">📋 복사</button>
-                <button id="btnToggleView" class="action-btn" data-i18n="btnViewText" style="width:auto; padding:5px 10px; font-size:11px;">TEXT로 보기</button>
+        <div class="code-header">
+            <h3 data-i18n="codeTitle" style="color:#333; margin:0;">SVG Code</h3>
+            <div class="code-controls"> 
+                <button id="btnCopyCode" class="action-btn" data-i18n="btnCopy">📋 복사</button>
+                <button id="btnToggleView" class="action-btn" data-i18n="btnViewText">TEXT로 보기</button>
+                <button id="btnCloseCode" class="btn-close-code">×</button>
             </div>
         </div>
         
@@ -181,77 +191,77 @@
             <div class="help-section">
                 <h3 data-i18n="h_shortcuts">⌨️ 단축키</h3>
                 <table class="shortcut-table">
-    <tr>
-        <th data-i18n="h_col_func">기능</th>
-        <th data-i18n="h_col_key">단축키</th>
-        <th data-i18n="h_col_desc">설명</th>
-    </tr>
-    <tr>
-        <td><strong data-i18n="k_select">선택</strong></td>
-        <td><kbd>V</kbd></td>
-        <td data-i18n="d_select">객체 선택 및 이동</td>
-    </tr>
-    <tr>
-        <td><strong data-i18n="k_draw">그리기</strong></td>
-        <td><kbd>D</kbd></td>
-        <td data-i18n="d_draw">자유 곡선 그리기 (Pen)</td>
-    </tr>
-    <tr>
-        <td><strong data-i18n="k_eraser">지우개</strong></td>
-        <td><kbd>E</kbd></td>
-        <td data-i18n="d_eraser">클릭: 삭제 / 드래그: 문질러 삭제</td>
-    </tr>
-    <tr>
-        <td><strong data-i18n="k_paint">페인트</strong></td>
-        <td><kbd>B</kbd></td>
-        <td data-i18n="d_paint">클릭하여 색 채우기</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_rect">사각형</td>
-        <td><kbd>R</kbd></td>
-        <td data-i18n="d_rect">드래그하여 사각형 생성</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_circle">원</td>
-        <td><kbd>C</kbd></td>
-        <td data-i18n="d_circle">드래그하여 원 생성</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_triangle">삼각형</td>
-        <td><kbd>T</kbd></td>
-        <td data-i18n="d_triangle">클릭하여 삼각형 생성</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_group">그룹화 / 해제</td>
-        <td><kbd>Ctrl</kbd>+<kbd>G</kbd></td>
-        <td data-i18n="d_group">묶기/풀기</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_copy">복사 / 붙여넣기</td>
-        <td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd></td>
-        <td data-i18n="d_copy">복제</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_undo">실행 취소</td>
-        <td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></td>
-        <td data-i18n="d_undo">되돌리기 / 재실행</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_del">삭제</td>
-        <td><kbd>Del</kbd></td>
-        <td data-i18n="d_del">선택 삭제</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_all">전체 선택</td>
-        <td><kbd>Ctrl</kbd>+<kbd>A</kbd></td>
-        <td data-i18n="d_all">모두 선택</td>
-    </tr>
-    <tr>
-        <td data-i18n="k_order">순서 변경</td>
-        <td><kbd>[</kbd> / <kbd>]</kbd></td>
-        <td data-i18n="d_order">맨 뒤로 / 맨 앞으로</td>
-    </tr>
-</table>
+                    <tr>
+                        <th data-i18n="h_col_func">기능</th>
+                        <th data-i18n="h_col_key">단축키</th>
+                        <th data-i18n="h_col_desc">설명</th>
+                    </tr>
+                    <tr>
+                        <td><strong data-i18n="k_select">선택</strong></td>
+                        <td><kbd>V</kbd></td>
+                        <td data-i18n="d_select">객체 선택 및 이동</td>
+                    </tr>
+                    <tr>
+                        <td><strong data-i18n="k_draw">그리기</strong></td>
+                        <td><kbd>D</kbd></td>
+                        <td data-i18n="d_draw">자유 곡선 그리기 (Pen)</td>
+                    </tr>
+                    <tr>
+                        <td><strong data-i18n="k_eraser">지우개</strong></td>
+                        <td><kbd>E</kbd></td>
+                        <td data-i18n="d_eraser">클릭: 삭제 / 드래그: 문질러 삭제</td>
+                    </tr>
+                    <tr>
+                        <td><strong data-i18n="k_paint">페인트</strong></td>
+                        <td><kbd>B</kbd></td>
+                        <td data-i18n="d_paint">클릭하여 색 채우기</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_rect">사각형</td>
+                        <td><kbd>R</kbd></td>
+                        <td data-i18n="d_rect">드래그하여 사각형 생성</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_circle">원</td>
+                        <td><kbd>C</kbd></td>
+                        <td data-i18n="d_circle">드래그하여 원 생성</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_triangle">삼각형</td>
+                        <td><kbd>T</kbd></td>
+                        <td data-i18n="d_triangle">클릭하여 삼각형 생성</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_group">그룹화 / 해제</td>
+                        <td><kbd>Ctrl</kbd>+<kbd>G</kbd></td>
+                        <td data-i18n="d_group">묶기/풀기</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_copy">복사 / 붙여넣기</td>
+                        <td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd></td>
+                        <td data-i18n="d_copy">복제</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_undo">실행 취소</td>
+                        <td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></td>
+                        <td data-i18n="d_undo">되돌리기 / 재실행</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_del">삭제</td>
+                        <td><kbd>Del</kbd></td>
+                        <td data-i18n="d_del">선택 삭제</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_all">전체 선택</td>
+                        <td><kbd>Ctrl</kbd>+<kbd>A</kbd></td>
+                        <td data-i18n="d_all">모두 선택</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_order">순서 변경</td>
+                        <td><kbd>[</kbd> / <kbd>]</kbd></td>
+                        <td data-i18n="d_order">맨 뒤로 / 맨 앞으로</td>
+                    </tr>
+                </table>
             </div>
 
             <div class="help-section">

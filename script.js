@@ -79,26 +79,14 @@ toggleCode: document.getElementById('btnToggleCode'), // [추가]
 let state = {
     mode: 'draw', 
     isDrawing: false,
-    
-// [추가/수정] 기능 옵션
-    snap: true,      // 스냅 기본 ON
-    snapSize: 20,    // 그리드 사이즈와 일치
-    showGrid: false, // 그리드 보임 여부
-    
+    isErasing: false, // 지우개 상태 추가
+    snap: true,      
+    snapSize: 20,    
+    showGrid: false, 
     selectedEls: [],
     clipboard: [],
-    
     action: null,     
     startPos: [0, 0],
-
-    // 선택 및 클립보드
-    selectedEls: [],
-    clipboard: [], // [추가] 복사된 도형 저장소
-    
-    // 드래그/변형 관련
-    action: null,     
-    startPos: [0, 0], 
-    
     initialState: {
         transforms: [], 
         uiTransform: '', 
@@ -106,16 +94,12 @@ let state = {
         boxDims: { w: 0, h: 0 },
         startAngle: 0 
     },
-
     transform: { x:0, y:0, w:0, h:0, scaleX:1, scaleY:1, angle:0, cx:0, cy:0 },
-
-currentShapeType: 'rect',
+    currentShapeType: 'rect',
     points: [],       
     currentPath: null, 
-    
-    // [수정] 히스토리 관리
     history: [],
-    redoStack: [] // [추가] Redo를 위한 스택
+    redoStack: []
 };
 
 // 초기화
@@ -343,6 +327,45 @@ ui.inputs.bg.addEventListener('change', saveHistory);
         ui.inputs[key].addEventListener('change', () => { if(state.selectedEls.length > 0) saveHistory(); });
     }
 });
+
+// [script.js] ui.btns 객체에 추가
+// [script.js] ui.btns 객체에 추가
+ui.btns.closeCode = document.getElementById('btnCloseCode');
+
+// 2. 코드창 요소 가져오기
+const codeArea = document.querySelector('.code-area');
+
+// 3. [중요] 토글 버튼 기능 (중복 방지를 위해 여기서 한 번만 정의)
+if (ui.btns.toggleCode) {
+    // 초기 실행 시: 모바일이면 자동으로 닫아두기
+    if (window.innerWidth <= 1000) {
+        codeArea.classList.add('collapsed');
+        ui.btns.toggleCode.classList.remove('active');
+    }
+
+    // 기존 리스너가 있다면 제거하고 새로 추가 (안전 장치)
+    const newBtn = ui.btns.toggleCode.cloneNode(true);
+    ui.btns.toggleCode.parentNode.replaceChild(newBtn, ui.btns.toggleCode);
+    ui.btns.toggleCode = newBtn;
+
+    // 클릭 이벤트 연결
+    ui.btns.toggleCode.addEventListener('click', () => {
+        codeArea.classList.toggle('collapsed');
+        const isVisible = !codeArea.classList.contains('collapsed');
+        ui.btns.toggleCode.classList.toggle('active', isVisible);
+    });
+}
+
+// 4. 모바일 전용 닫기(X) 버튼 기능
+if (ui.btns.closeCode) {
+    ui.btns.closeCode.addEventListener('click', () => {
+        codeArea.classList.add('collapsed'); // 무조건 닫기
+        if (ui.btns.toggleCode) {
+            ui.btns.toggleCode.classList.remove('active'); // 버튼 불 끄기
+        }
+    });
+}
+
 
 ui.btns.noFill.addEventListener('click', applyNoFill);
 ui.btns.undo.addEventListener('click', undo);
@@ -1482,11 +1505,14 @@ function applyCodeFromTextarea(e) {
     
     // children은 실시간으로 변하므로 Array.from으로 고정 후 순회
     Array.from(svg.children).forEach(child => {
-        // 보호된 ID도 아니고, defs 태그도 아니면 삭제 대상 (사용자가 그린 도형)
-        if (!protectedIds.includes(child.id) && child.tagName !== 'defs') {
+ // [수정] id가 없어도 class가 'preview-line'이면 삭제하지 않도록 보호 조건 추가
+        if (!protectedIds.includes(child.id) && 
+            child.tagName !== 'defs' && 
+            !child.classList.contains('preview-line')) { // <--- 이 부분 추가!
+            
             child.remove();
         }
-    });
+    })
 
     // 4. 파싱된 새 도형들을 캔버스에 추가
     // doc.documentElement는 <svg> 태그 자체이므로 그 자식들을 가져옴
@@ -1674,19 +1700,7 @@ document.getElementById('langSelect').addEventListener('change', (e) => {
     changeLanguage(e.target.value);
 });
 
-// --- [코드창 토글 기능] ---
-if (ui.btns.toggleCode) {
-    // 초기 설정: 화면 너비가 좁으면 자동으로 접기
-    if (window.innerWidth <= 1000) {
-        document.querySelector('.code-area').classList.add('collapsed');
-        ui.btns.toggleCode.classList.remove('active');
-    }
+// script.js 파일의 맨 끝부분
 
-    ui.btns.toggleCode.addEventListener('click', () => {
-        const codeArea = document.querySelector('.code-area');
-        codeArea.classList.toggle('collapsed');
-        
-        const isVisible = !codeArea.classList.contains('collapsed');
-        ui.btns.toggleCode.classList.toggle('active', isVisible);
-    });
-}
+// ▼▼▼ [추가] 페이지 로드 시 'ko' 언어 설정을 강제로 적용하여 텍스트 갱신 ▼▼▼
+changeLanguage('ko');
