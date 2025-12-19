@@ -757,11 +757,13 @@ function selectElements(elements) {
     }
 
     updateUIBox(); 
+highlightCode(); // <--- [추가]
 }
 
 function deselect() {
     state.selectedEls = [];
     ui.inputs.layer.style.display = 'none';
+highlightCode(); // <--- [추가]
 }
 
 function updateUIBox() {
@@ -1325,35 +1327,54 @@ function updateCode() {
     const viewer = ui.inputs.viewer;
     const style = svg.getAttribute("style");
     viewer.innerHTML = ""; 
+    
     const headerDiv = document.createElement("div");
     headerDiv.className = "code-line";
     headerDiv.textContent = `<svg width="800" height="600" style="${style}" xmlns="http://www.w3.org/2000/svg">`;
     viewer.appendChild(headerDiv);
 
     let rawHtml = `<svg width="800" height="600" style="${style}" xmlns="http://www.w3.org/2000/svg">\n`;
-    Array.from(svg.children).forEach((child) => 
-{// ▼▼▼ [수정] 여기서도 'gridRect'와 'defs'(패턴정의)를 제외합니다 ▼▼▼
+    
+    Array.from(svg.children).forEach((child) => {
         if (child.classList.contains("preview-line") || 
             child.id === 'uiLayer' || 
             child.id === 'marqueeRect' || 
             child.id === 'gridRect' || 
             child.tagName === 'defs') return;
+            
         const clone = child.cloneNode();
         const lineDiv = document.createElement("div");
         lineDiv.className = "code-line code-element"; 
-        lineDiv.textContent = "  " + clone.outerHTML; 
+        lineDiv.textContent = "  " + clone.outerHTML;
+        
+        // [중요] 코드 줄과 실제 도형을 연결!
+        lineDiv.targetEl = child; 
+        
+        // [보너스 기능] 코드 줄을 클릭하면 캔버스에서 해당 도형이 선택됨
+        lineDiv.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectElements([child]);
+        });
+
         viewer.appendChild(lineDiv);
         rawHtml += `  ${clone.outerHTML}\n`;
     });
+    
     const footerDiv = document.createElement("div");
     footerDiv.className = "code-line";
     footerDiv.textContent = `</svg>`;
     viewer.appendChild(footerDiv);
+    
     rawHtml += `</svg>`;
-if (document.activeElement !== ui.inputs.text) {
+    
+    if (document.activeElement !== ui.inputs.text) {
         ui.inputs.text.value = rawHtml;
     }
+
+    // 코드가 갱신되면 현재 선택된 것에 맞춰 하이라이트 다시 적용
+    highlightCode();
 }
+
 
 function downloadImage() {
     let rawHtml = `<svg width="800" height="600" style="${svg.getAttribute("style")}" xmlns="http://www.w3.org/2000/svg">\n`;
@@ -1704,3 +1725,55 @@ document.getElementById('langSelect').addEventListener('change', (e) => {
 
 // ▼▼▼ [추가] 페이지 로드 시 'ko' 언어 설정을 강제로 적용하여 텍스트 갱신 ▼▼▼
 changeLanguage('ko');
+
+// [script.js] 맨 아래에 추가
+
+// --- [코드 하이라이트 기능] ---
+
+// 1. 하이라이트 실행 함수
+function highlightCode(hoveredEl = null) {
+    const viewer = document.getElementById('codeViewer');
+    const lines = Array.from(viewer.children);
+    
+    lines.forEach(line => {
+        // 연결된 도형이 없으면 패스 (헤더/푸터 등)
+        if (!line.targetEl) return;
+        
+        // 현재 라인의 도형이 '선택되었거나' OR '마우스가 올라갔거나'
+        const isSelected = state.selectedEls.includes(line.targetEl);
+        const isHovered = (hoveredEl && line.targetEl === hoveredEl);
+        
+        if (isSelected || isHovered) {
+            line.classList.add('highlight');
+            
+            // 선택된 경우라면 스크롤도 그쪽으로 이동 (편의성)
+            if (isSelected && !isHovered) {
+                // 너무 자주 깜빡이지 않게 약간의 조건 필요하면 추가 가능
+                line.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+        } else {
+            line.classList.remove('highlight');
+        }
+    });
+}
+
+// 2. 마우스 오버 이벤트 연결 (캔버스 위에서 움직일 때)
+svg.addEventListener('mousemove', (e) => {
+    // 드래그 중이거나 그리기 중일 땐 방해되므로 중단
+    if (state.isDrawing || state.action) return;
+    
+    // 마우스 아래에 있는 요소 찾기
+    const target = e.target;
+    
+    // SVG 배경이나 UI 요소가 아니면 하이라이트 켜기
+    if (target !== svg && target.id !== 'uiLayer' && target.id !== 'gridRect') {
+        highlightCode(target);
+    } else {
+        highlightCode(null); // 허공이면 끄기
+    }
+});
+
+// 3. 마우스가 캔버스를 벗어나면 하이라이트 끄기
+svg.addEventListener('mouseleave', () => {
+    highlightCode(null);
+});

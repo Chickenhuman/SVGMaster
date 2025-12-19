@@ -53,8 +53,8 @@ const translations = {
         a_bottom: "↓ 아래쪽 맞춤",
 
         // 4. 동적 상태 텍스트
-        snapOn: "🧲 스냅 On",
-        snapOff: "🧲 스냅 Off",
+        snapOn: "🧲 ",
+        snapOff: "🧲 ",
 
         // 5. 도움말 모달
         h_title: "📖 SVG Master 사용 설명서",
@@ -136,8 +136,8 @@ msg_copyright: "© 2025 ChickenHuman. All rights reserved."
         a_middle: "─ Align Center Y",
         a_bottom: "↓ Align Bottom",
 
-        snapOn: "🧲 Snap On",
-        snapOff: "🧲 Snap Off",
+        snapOn: "🧲",
+        snapOff: "🧲",
 
         h_title: "📖 SVG Master User Manual",
         h_intro: "Design vector graphics and generate code directly on the web.",
@@ -215,8 +215,8 @@ msg_copyright: "© 2025 ChickenHuman. All rights reserved."
         a_middle: "─ 上下中央",
         a_bottom: "↓ 下揃え",
 
-        snapOn: "🧲 スナップ On",
-        snapOff: "🧲 スナップ Off",
+        snapOn: "🧲 ",
+        snapOff: "🧲 ",
 
         h_title: "📖 SVG Master ユーザーガイド",
         h_intro: "ウェブ上でベクターグラフィックをデザインし、コードを生成します。",

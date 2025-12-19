@@ -272,3 +272,26 @@ kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; pad
     margin-top: auto; padding: 20px 0 5px 0;
     border-top: 1px solid #eee; text-align: center; color: #aaa; font-size: 11px;
 }
+
+/* --- [추가] 코드창 강조 효과 (선택/마우스오버) --- */
+.code-line {
+    padding: 2px 5px;
+    border-radius: 2px;
+    transition: background-color 0.1s;
+    cursor: pointer; /* 코드 클릭 시 역으로 선택 가능 */
+}
+
+/* 강조 스타일 (공통) */
+.code-line.highlight {
+    background-color: rgba(74, 144, 226, 0.2); /* 파란색 틴트 */
+    border-left: 3px solid var(--primary);
+    font-weight: bold;
+}
+
+/* 모바일(어두운 배경)에서는 글자색 밝게 */
+@media (max-width: 1000px) {
+    .code-line.highlight {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+}
