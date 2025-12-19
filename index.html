@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Master Tool (Interactive Code)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="main-container">
+<div class="sidebar">
+    <h3>SVG Master</h3>
+    
+    <div class="tool-group">
+        <button class="btn-tool active" id="toolDraw" data-mode="draw">✏️ 그리기</button>
+        <button class="btn-tool" id="toolSelect" data-mode="select">👆 선택</button>
+        <button class="btn-tool" id="toolPaint" data-mode="paint">🎨 페인트</button>
+        <button class="btn-tool" id="toolShape" data-mode="shape">📐 도형</button>
+        
+        <button class="btn-tool" id="btnGrid">▦ 그리드</button>
+        <button class="btn-tool active" id="btnSnap">🧲 스냅 On</button>
+        
+        <button class="btn-tool" id="btnUndo">↩️ 취소</button>
+        <button class="btn-tool" id="btnRedo">↪️ 재실행</button>
+    </div>
+
+    <div id="shapeSubMenu" class="tool-sub-group hidden">
+        <button class="btn-sub active" data-shape="rect">⬜ 사각형</button>
+        <button class="btn-sub" data-shape="circle">⭕ 원</button>
+        <button class="btn-sub" data-shape="triangle">🔺 삼각형</button>
+    </div>
+
+<div class="tool-group">
+    <button class="btn-tool" id="btnGroup">🔗 그룹</button>
+    <button class="btn-tool" id="btnUngroup">💔 해제</button>
+    <button class="btn-tool" id="btnToFront">🔼 맨앞</button>
+    <button class="btn-tool" id="btnToBack">🔽 맨뒤</button>
+    <button class="btn-tool" id="btnDelete" style="color:var(--accent-red);">🗑️ 삭제</button>
+</div>
+
+<div class="properties-panel">
+    
+    <div class="control-row">
+        <label>색상 (선/채우기)</label>
+        <div class="input-group">
+            <input type="color" id="inpColor" value="#4a90e2">
+            <input type="text" id="inpHex" value="#4a90e2">
+        </div>
+    </div>
+    
+    <div class="control-row">
+        <label>채우기 색상</label>
+        <div class="input-group">
+             <input type="color" id="inpFill" value="#ffffff" style="width:100%;">
+             <button class="btn-tool" id="btnNoFill" style="padding: 2px 8px; font-size:11px;">🚫 없음</button>
+        </div>
+    </div>
+
+    <div class="control-row">
+        <label>선 두께: <span id="valWidth">2</span>px</label>
+        <input type="range" id="inpWidth" min="1" max="20" value="2">
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 5px 0;">
+
+    <div class="control-row">
+        <label>곡률 (Tension): <span id="valTension">0</span></label>
+        <input type="range" id="inpTension" min="0" max="1" step="0.1" value="0">
+    </div>
+
+    <div class="control-row">
+        <label>회전 (Rotate): <span id="valRotate">0</span>°</label>
+        <input type="range" id="inpRotate" min="0" max="360" value="0">
+    </div>
+
+    <div class="control-row">
+        <label>선 끝 모양 (Cap)</label>
+        <select id="inpCap">
+            <option value="round">둥글게 (Round)</option>
+            <option value="butt">직각 (Butt)</option>
+            <option value="square">사각 (Square)</option>
+        </select>
+    </div>
+    
+    <div class="control-row" style="flex-direction:row; align-items:center;">
+        <input type="checkbox" id="chkAutoClose">
+        <label for="chkAutoClose" style="margin-left:5px; cursor:pointer;">도형 자동 닫기</label>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 5px 0;">
+
+    <div class="control-row">
+        <label>캔버스 배경색</label>
+        <input type="color" id="inpBgColor" value="#ffffff" style="width:100%; height:30px;">
+    </div>
+
+    <div class="tool-group">
+        <button class="btn-tool" id="btnToFront">🔼 맨앞</button>
+        <button class="btn-tool" id="btnToBack">🔽 맨뒤</button>
+        <button class="btn-tool" id="btnDelete" style="color:var(--accent-red);">🗑️ 삭제</button>
+    </div>
+    
+    <div style="margin-top:auto;">
+        <button class="action-btn primary" id="btnFinish" disabled>✔️ 완료 (Space)</button>
+        <button class="action-btn" id="btnDownload">💾 이미지 저장</button>
+</div>
+        </div>
+    </div>
+
+    <div class="canvas-area">
+    <div id="svg-wrapper">
+        <svg id="mainSvg" width="800" height="600" xmlns="http://www.w3.org/2000/svg" style="background-color: #ffffff;">
+            
+            <defs>
+                <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+                </pattern>
+            </defs>
+            
+            <rect id="gridRect" width="100%" height="100%" fill="url(#gridPattern)" style="pointer-events: none; display: none;" />
+<rect id="marqueeRect" fill="rgba(74, 144, 226, 0.1)" stroke="#4a90e2" stroke-width="1" stroke-dasharray="4 4" style="display: none; pointer-events: none;" />
+
+<g id="uiLayer" style="display: none;">
+<rect id="selectionBox" fill="transparent" stroke="#4a90e2" stroke-width="1" stroke-dasharray="4 4" 
+      pointer-events="all" style="cursor: move;"/>        
+        <rect id="handleResize" width="10" height="10" fill="white" stroke="#4a90e2" style="cursor: nwse-resize;" />
+        
+        <circle id="handleRotate" r="5" fill="white" stroke="#ff4757" style="cursor: grab;" />
+        <line id="rotateLine" stroke="#4a90e2" stroke-width="1" />
+    </g>
+</svg>
+        </div>
+    </div>
+
+<div class="code-area">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="color:white; margin:0;">SVG Code</h3>
+        <div style="display:flex; gap:5px;"> <button id="btnCopyCode" class="action-btn" style="width:auto; padding:5px 10px; font-size:11px;">📋 복사</button>
+            <button id="btnToggleView" class="action-btn" style="width:auto; padding:5px 10px; font-size:11px;">TEXT로 보기</button>
+        </div>
+    </div>
+    
+    <div id="codeViewer" class="code-view"></div>
+    <textarea id="codeText" class="code-view" style="display:none;"></textarea>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

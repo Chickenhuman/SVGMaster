@@ -1,0 +1,269 @@
+:root { 
+    --primary: #4a90e2; 
+    --bg-panel: #ffffff; 
+    --border: #ddd; 
+    --accent-red: #ff4757;
+    --code-bg: #282c34;
+}
+
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    padding: 20px; 
+    background-color: #f4f6f8; 
+    user-select: none; 
+    margin: 0; 
+    box-sizing: border-box;
+}
+
+/* ============================
+   1. 메인 레이아웃 (Grid/Flex)
+   ============================ */
+.main-container { 
+    display: flex; 
+    gap: 20px; 
+    max-width: 1600px; 
+    margin: 0 auto; 
+    height: 90vh; 
+    flex-wrap: nowrap; /* 기본은 가로 배치 */
+}
+
+/* ============================
+   2. 사이드바 (도구 상자)
+   ============================ */
+.sidebar { 
+    width: 320px; 
+    min-width: 300px;
+    background: var(--bg-panel); 
+    padding: 20px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    overflow-y: auto; 
+    flex-shrink: 0; /* 사이드바 크기 줄어들지 않게 고정 */
+}
+
+.sidebar h3 { margin: 0 0 10px 0; color: #333; }
+
+/* 툴 버튼 그리드 */
+.tool-group { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 8px; 
+}
+
+.btn-tool { 
+    padding: 12px; 
+    border: 1px solid var(--border); 
+    background: #f9f9f9; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 6px; 
+    font-weight: 600; 
+    font-size: 14px; 
+    color: #555;
+}
+.btn-tool:hover { background: #eef5ff; border-color: var(--primary); }
+.btn-tool.active { 
+    background: var(--primary); 
+    color: white; 
+    border-color: var(--primary); 
+    box-shadow: 0 2px 5px rgba(74, 144, 226, 0.3);
+}
+
+/* 도형 서브 메뉴 (삼각형, 원, 사각형) */
+.tool-sub-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    background: #f0f2f5;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin-top: -5px; /* 툴 그룹 바로 아래 붙기 */
+}
+.btn-sub {
+    padding: 8px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+}
+.btn-sub:hover { background: #fff; border-color: var(--primary); color: var(--primary); }
+.btn-sub.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+.hidden { display: none !important; }
+
+/* 속성 패널 */
+.properties-panel { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; }
+.control-row { display: flex; flex-direction: column; gap: 8px; }
+.control-row label { 
+    font-size: 13px; color: #444; font-weight: 600; 
+    display: flex; justify-content: space-between; align-items: center; 
+}
+
+.input-group { display: flex; gap: 8px; align-items: center; }
+
+input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--primary); }
+input[type="color"] { 
+    width: 40px; height: 35px; border: none; padding: 0; 
+    background: none; cursor: pointer; border-radius: 4px; 
+}
+input[type="text"], select { 
+    padding: 8px; border: 1px solid #ccc; border-radius: 6px; 
+    width: 100%; font-size: 13px; box-sizing: border-box;
+}
+
+.action-btn { 
+    background: #fff; border: 1px solid #ccc; padding: 10px; 
+    border-radius: 6px; cursor: pointer; font-size: 13px; 
+    width: 100%; transition: 0.2s; font-weight: 500;
+}
+.action-btn:hover { background: #f5f5f5; border-color: #bbb; }
+.action-btn.primary { 
+    background: var(--primary); color: white; border: none; 
+    font-weight: bold; box-shadow: 0 4px 6px rgba(74, 144, 226, 0.2);
+}
+.action-btn.primary:hover { background: #357abd; }
+.action-btn.primary:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
+
+/* ============================
+   3. 캔버스 영역
+   ============================ */
+.canvas-area { 
+    flex: 1; /* 남은 공간 모두 차지 */
+    background: #e0e0e0; 
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    position: relative; 
+    overflow: hidden; 
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+}
+#svg-wrapper { 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+    line-height: 0; 
+    background-color: white; /* SVG 자체 배경 */
+}
+
+/* SVG 내부 요소 스타일 */
+#svg-wrapper svg { cursor: default; }
+#svg-wrapper svg path, 
+#svg-wrapper svg rect, 
+#svg-wrapper svg circle, 
+#svg-wrapper svg polygon {
+    pointer-events: all; /* 채우기 없어도 클릭 감지 */
+    cursor: pointer;
+}
+.preview-line { stroke: #ff4757; stroke-width: 1.5; stroke-dasharray: 4, 4; pointer-events: none; opacity: 0.7; }
+.selection-highlight { outline: 2px dashed var(--primary); outline-offset: 4px; }
+.cursor-move { cursor: move !important; }
+
+/* ============================
+   4. 코드 뷰어 영역
+   ============================ */
+.code-area { 
+    width: 320px; 
+    min-width: 280px;
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0;
+}
+.code-view { 
+    flex: 1; 
+    padding: 15px; 
+    background: var(--code-bg); 
+    color: #abb2bf; 
+    border-radius: 12px; 
+    overflow-y: auto; 
+    font-family: 'Consolas', 'Monaco', monospace; 
+    font-size: 12px; 
+    line-height: 1.6;
+    white-space: pre-wrap; 
+    word-break: break-all;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.code-line { display: block; padding: 2px 4px; border-radius: 2px; }
+.code-line:hover { background: rgba(255,255,255,0.1); }
+
+
+/* ============================
+   5. 반응형 레이아웃 (핵심)
+   ============================ */
+@media (max-width: 900px) {
+    /* 화면이 1200px보다 작아지면 레이아웃 변경 */
+    .main-container {
+        flex-wrap: wrap; /* 줄바꿈 허용 */
+        height: auto;    /* 전체 높이 자동 */
+        padding-bottom: 50px;
+    }
+
+    /* 1순위: 캔버스 (가장 크게, 맨 위나 중간에 배치하기 좋음) */
+    .canvas-area {
+        order: 1; /* 두 번째 순서 */
+        width: 100%; /* 가로 꽉 채움 */
+        height: 60vh; /* 높이는 화면의 60% */
+        min-height: 400px;
+        flex: none; /* flex-grow 해제 */
+    }
+
+    /* 2순위: 사이드바 (도구) */
+    .sidebar {
+        order: 2; /* 첫 번째 순서 (맨 위) */
+        width: 100%; /* 가로 꽉 채움 */
+        flex-direction: row; /* 내부 요소 가로 배치 */
+        flex-wrap: wrap;
+        height: auto;
+        overflow-y: visible;
+        box-sizing: border-box;
+    }
+    
+    /* 사이드바 내부 조정 */
+    .sidebar .tool-group, 
+    .sidebar .properties-panel,
+    .sidebar .tool-sub-group {
+        flex: 1;
+        min-width: 250px; /* 너무 좁아지지 않게 */
+        margin: 0;
+    }
+    
+    .sidebar .properties-panel { margin-top: 0; }
+    
+    /* 3순위: 코드창 (맨 아래) */
+    .code-area {
+        order: 3;
+        width: 100%;
+        height: 300px; /* 고정 높이 */
+        flex: none;
+    }
+}
+
+/* [style.css] 맨 아래에 추가 */
+
+/* 변형 핸들 스타일 */
+#handleResize {
+    stroke-width: 1.5px;
+    transition: fill 0.2s;
+}
+#handleResize:hover {
+    fill: #4a90e2; 
+}
+
+#handleRotate {
+    stroke-width: 1.5px;
+}
+#handleRotate:hover {
+    fill: #ff4757;
+}
+#handleRotate:active {
+    cursor: grabbing !important;
+}
