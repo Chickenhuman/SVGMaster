@@ -29,6 +29,7 @@ const ui = {
         toggle: document.getElementById('btnToggleView'),
 	help: document.getElementById('btnHelp'), // [추가]
         toFront: document.getElementById('btnToFront'),
+toggleCode: document.getElementById('btnToggleCode'), // [추가]
 	eraser: document.getElementById('toolEraser'), // [추가]
         toBack: document.getElementById('btnToBack'),
 	copy: document.getElementById('btnCopyCode'), // [추가]
@@ -354,7 +355,9 @@ ui.btns.toggle.addEventListener('click', () => {
     const isTextMode = ui.inputs.text.style.display !== 'none';
     ui.inputs.text.style.display = isTextMode ? 'none' : 'block';
     ui.inputs.viewer.style.display = isTextMode ? 'block' : 'none';
-    ui.btns.toggle.textContent = isTextMode ? "TEXT로 보기" : "Viewer로 보기";
+    
+    // [수정] 다국어 함수 사용
+    ui.btns.toggle.textContent = isTextMode ? t('btnViewText') : t('btnViewViewer');
 });
 
 
@@ -516,6 +519,16 @@ svg.addEventListener('click', (e) => {
 // [수정됨] 키보드 단축키 이벤트 핸들러 (왼손 최적화)
 // ==========================================
 document.addEventListener('keydown', (e) => {
+    // F1 키 감지
+    if (e.key === 'F1') {
+        // 브라우저 기본 도움말 창이 뜨는 것을 강력하게 방지
+        e.preventDefault(); 
+        e.stopPropagation(); // 이벤트가 상위로 퍼지는 것을 막음
+        
+        openHelp(); // 우리가 만든 모달 열기
+        return false;
+    }
+
     // 1. 텍스트 입력 중일 때는 단축키 무시
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
@@ -627,7 +640,9 @@ function toggleGrid() {
 function toggleSnap() {
     state.snap = !state.snap;
     ui.btns.snap.classList.toggle('active', state.snap);
-    ui.btns.snap.textContent = state.snap ? "🧲 스냅 On" : "🧲 스냅 Off";
+    
+    // [수정] 직접 텍스트를 쓰지 않고 다국어 함수 호출
+    ui.btns.snap.textContent = state.snap ? t('snapOn') : t('snapOff');
 }
 
 // [핵심 수정] 좌표 가져올 때 스냅 적용
@@ -1429,15 +1444,24 @@ function ungroupSelected() {
 // --- [SVG 코드 유틸리티 (복사 및 역방향 동기화)] ---
 
 // 1. 코드 복사 기능
+// [script.js] copyCodeToClipboard 함수 수정
 function copyCodeToClipboard() {
     const code = ui.inputs.text.style.display === 'none' 
-        ? ui.inputs.viewer.innerText  // 뷰어 모드일 때
-        : ui.inputs.text.value;       // 텍스트 모드일 때
+        ? ui.inputs.viewer.innerText 
+        : ui.inputs.text.value; 
 
     navigator.clipboard.writeText(code).then(() => {
+        // [수정] 현재 버튼 텍스트 저장 (이건 그대로 둠)
         const originalText = ui.btns.copy.innerText;
-        ui.btns.copy.innerText = "✅ 완료!";
-        setTimeout(() => ui.btns.copy.innerText = originalText, 1500);
+        
+        // [수정] "완료!" 메시지를 다국어로 표시
+        ui.btns.copy.innerText = t('copyDone');
+        
+        // 1.5초 후 원래 텍스트(번역된 "복사")로 복구
+        setTimeout(() => {
+             // 단순히 originalText로 돌리는 게 아니라, 현재 언어에 맞는 "복사" 텍스트로 리셋
+             ui.btns.copy.innerText = t('btnCopy'); 
+        }, 1500);
     });
 }
 
@@ -1644,3 +1668,25 @@ document.addEventListener('keydown', (e) => {
         closeHelp();
     }
 });
+
+// script.js 맨 아래 추가
+document.getElementById('langSelect').addEventListener('change', (e) => {
+    changeLanguage(e.target.value);
+});
+
+// --- [코드창 토글 기능] ---
+if (ui.btns.toggleCode) {
+    // 초기 설정: 화면 너비가 좁으면 자동으로 접기
+    if (window.innerWidth <= 1000) {
+        document.querySelector('.code-area').classList.add('collapsed');
+        ui.btns.toggleCode.classList.remove('active');
+    }
+
+    ui.btns.toggleCode.addEventListener('click', () => {
+        const codeArea = document.querySelector('.code-area');
+        codeArea.classList.toggle('collapsed');
+        
+        const isVisible = !codeArea.classList.contains('collapsed');
+        ui.btns.toggleCode.classList.toggle('active', isVisible);
+    });
+}
