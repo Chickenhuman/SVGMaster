@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVG Master Tool</title>
+    
+    <title>SVG Master - Free Online Vector Editor</title>
+    <meta name="description" content="Free online SVG vector editor. Draw paths, shapes, and generate SVG code instantly. No installation required. Supports English, Korean, and Japanese.">
+    <meta name="keywords" content="SVG editor, vector graphics, online tool, SVG path generator, web design, free tool, open source">
+    <meta name="author" content="ChickenHuman">
+
+    <meta property="og:title" content="SVG Master - Free Online Vector Editor">
+    <meta property="og:description" content="Draw SVGs and generate code directly in your browser. No install needed.">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,22 +20,62 @@
         <h3 data-i18n="properties">Properties</h3>
         
         <div class="properties-panel">
-            <div class="control-row">
+<div class="control-row">
                 <label data-i18n="strokeColor">색상 (선)</label>
                 <div class="input-group">
                     <input type="color" id="inpColor" value="#4a90e2">
                     <input type="text" id="inpHex" value="#4a90e2">
                 </div>
+                <div id="paletteStroke" class="palette-container"></div>
             </div>
-            
+
             <div class="control-row">
-                <label data-i18n="fillColor">채우기 색상</label>
-                <div class="input-group">
-                     <input type="color" id="inpFill" value="#ffffff" style="width:100%;">
-                     <button class="btn-tool" id="btnNoFill" data-i18n="noFill" style="padding: 2px 8px; font-size:11px;">🚫 없음</button>
-                </div>
+                <label><span data-i18n="strokeOpacity">선 투명도</span>: <span id="valStrokeOpacity">100</span>%</label>
+                <input type="range" id="inpStrokeOpacity" min="0" max="100" value="100">
+            </div>            
+            <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+            
+<div class="control-row">
+    <label data-i18n="fillColor">채우기 색상</label>
+    <div class="input-group">
+        <input type="color" id="inpFill" value="#ffffff" style="width:100%;">
+        <button class="btn-tool" id="btnNoFill" data-i18n="noFill" style="padding: 2px 8px; font-size:11px;">🚫 없음</button>
+    </div>
+    <div id="paletteFill" class="palette-container"></div>
+</div>
+
+<div class="control-row">
+                <label><span data-i18n="fillOpacity">채우기 투명도</span>: <span id="valFillOpacity">100</span>%</label>
+                <input type="range" id="inpFillOpacity" min="0" max="100" value="100">
             </div>
-    
+<div id="panelText" style="display:none; background:#f0f8ff; padding:10px; border-radius:8px; margin-bottom:10px; border:1px solid #cceeff;">
+    <div class="control-row">
+        <label data-i18n="textContent">텍스트 내용</label>
+        <input type="text" id="inpTextContent" placeholder="내용 입력">
+    </div>
+    <div class="control-row" style="flex-direction: row; gap: 10px;">
+        <div style="flex:1;">
+            <label data-i18n="fontSize">크기</label>
+            <input type="number" id="inpFontSize" value="24" min="8" max="200">
+        </div>
+        <div style="flex:1;">
+             <label data-i18n="fontWeight">굵기</label>
+             <select id="inpFontWeight">
+                 <option value="normal">Normal</option>
+                 <option value="bold">Bold</option>
+             </select>
+        </div>
+    </div>
+    <div class="control-row">
+        <label data-i18n="fontFamily">글꼴</label>
+        <select id="inpFontFamily">
+            <option value="sans-serif">고딕 (Sans-serif)</option>
+            <option value="serif">명조 (Serif)</option>
+            <option value="monospace">코딩 (Monospace)</option>
+            <option value="cursive">필기체 (Cursive)</option>
+        </select>
+    </div>
+</div>
             <div class="control-row">
                 <label><span data-i18n="strokeWidth">선 두께</span>: <span id="valWidth">2</span>px</label>
                 <input type="range" id="inpWidth" min="1" max="20" value="2">
@@ -67,9 +114,21 @@
                 <button class="action-btn primary" id="btnFinish" data-i18n="btnFinish" disabled>✔️ 완료 (Space)</button>
             </div>
         </div>
+<div class="support-area">
+    <a href="https://buymeacoffee.com/chickenhuman" target="_blank" class="btn-support coffee" data-i18n="btn_coffee">
+        ☕ Buy me a coffee
+    </a>
+
+    <a href="https://forms.gle/E7dMhAyMKhC31gUw6" class="btn-support feedback" data-i18n="btn_feedback">
+        📧 Feedback / Bug Report
+    </a>
+</div>
 
         <div class="app-footer">
             <small data-i18n="msg_copyright">© 2025 ChickenHuman. All rights reserved.</small>
+            </br>Last updated : 2025.12.22 </small>
+            </br>Ver 1.0 (Beta) </small>
+
         </div>
     </div>
 
@@ -80,13 +139,21 @@
             </div>
             <div class="v-divider"></div>
             <button id="btnToggleSidebar" class="btn-icon" data-i18n-title="t_sidebar" title="사이드바 토글">◀</button>
+         <button class="btn-icon active" id="btnToggleCode" data-i18n-title="t_code" title="코드창 토글">📜</button> 
             <div class="v-divider"></div>
             
             <button class="btn-icon active btn-tool" id="toolDraw" data-mode="draw" data-i18n-title="t_draw" title="그리기">✏️</button>
+            <div class="dropdown-container">
+                <button class="btn-icon btn-tool" id="toolStroke" data-i18n-title="t_stroke" title="선 스타일">➖</button>
+                <div id="strokeSubMenu" class="dropdown-menu">
+                    <button class="btn-sub active" data-dash="solid" data-i18n="s_solid">_______ 실선 (1)</button>
+                    <button class="btn-sub" data-dash="dashed" data-i18n="s_dashed">------- 점선 (2)</button>
+                </div>
+            </div>
             <button class="btn-icon btn-tool" id="toolSelect" data-mode="select" data-i18n-title="t_select" title="선택">👆</button>
             <button class="btn-icon btn-tool" id="toolPaint" data-mode="paint" data-i18n-title="t_paint" title="페인트">🎨</button>
             <button class="btn-icon btn-tool" id="toolEraser" data-mode="eraser" data-i18n-title="t_eraser" title="지우개">🧹</button>
-            
+<button class="btn-icon btn-tool" id="toolText" data-mode="text" data-i18n-title="t_text" title="텍스트">T</button>
             <div class="dropdown-container">
                 <button class="btn-icon btn-tool" id="toolShape" data-mode="shape" data-i18n-title="t_shape" title="도형">📐</button>
                 <div id="shapeSubMenu" class="dropdown-menu">
@@ -123,28 +190,67 @@
             <button class="btn-icon" id="btnUngroup" data-i18n-title="t_ungroup" title="그룹해제">💔</button>
             <button class="btn-icon" id="btnToFront" data-i18n-title="t_front" title="맨 앞으로">🔼</button>
             <button class="btn-icon" id="btnToBack" data-i18n-title="t_back" title="맨 뒤로">🔽</button>
-            <button class="btn-icon" id="btnDelete" data-i18n-title="t_delete" title="삭제" style="color:var(--accent-red);">🗑️</button>
+       <button class="btn-icon" id="btnDelete" data-i18n-title="t_delete" title="삭제" style="color:var(--accent-red);">🗑️</button>
             
             <div class="v-divider"></div>
 
-            <button class="btn-icon" id="btnDownload" data-i18n-title="btnDownload" title="이미지 저장">💾</button>
+<div class="dropdown-container">
+                <button class="btn-icon btn-tool" id="btnDownloadMenu" data-i18n-title="t_download" title="저장 및 내보내기">💾</button>
+                <div id="downloadSubMenu" class="dropdown-menu">
+                    <button class="btn-sub" id="btnSaveProject">💾 프로젝트 저장 (.json)</button>
+                    <button class="btn-sub" id="btnLoadProject">📂 프로젝트 열기</button>
+                    <hr style="margin: 4px 0; border:0; border-top:1px solid #eee;">
+                    <button class="btn-sub" id="btnDownloadPNG">🖼️ PNG 저장</button>
+                    <button class="btn-sub" id="btnDownloadSVG">📄 SVG 저장</button>
+                </div>
+            </div>
 
             <div class="v-divider"></div>
             
             <button class="btn-icon" id="btnHelp" data-i18n-title="t_help" title="도움말">❓</button>
             <div class="v-divider"></div>
-            
-            <button class="btn-icon active" id="btnToggleCode" data-i18n-title="t_code" title="코드창 토글">📜</button> 
 
-            <div class="v-divider"></div>
-
-            <select id="langSelect" class="btn-tool" style="width: auto; padding: 2px 5px;">
-                <option value="ko">KO</option>
-                <option value="en">EN</option>
-                <option value="ja">JA</option>
-            </select>
+<div class="dropdown-container">
+    <button class="btn-icon" id="btnLang" title="Language" style="width: auto; padding: 0 8px; font-size: 14px; gap: 5px;">
+        🌐 <span id="currentLangLabel" style="font-weight:600; font-size:12px;">EN</span>
+    </button>
+    
+    <div id="langSubMenu" class="dropdown-menu" style="right: 0; left: auto; min-width: 90px;">
+        <button class="btn-sub" data-lang="en">English</button>
+        <button class="btn-sub" data-lang="ko">한국어</button>
+        <button class="btn-sub" data-lang="ja">日本語</button>
+    </div>
+</div>
         </div>
+<div id="welcomeModal" class="modal-overlay">
+    <div class="modal-window" style="max-width: 500px; text-align: center;">
+        <div class="modal-header" style="justify-content: center;">
+            <h2>👋 Welcome to SVG Master!</h2>
+        </div>
+        <div class="modal-content" style="padding: 30px 20px;">
+            <p style="font-size: 16px; margin-bottom: 20px; line-height: 1.6; color: #555;">
+                <strong>SVG Master</strong> is a 100% free, web-based vector editor.<br>
+                Draw shapes, paths, and get the SVG code instantly.
+            </p>
+            
+            <ul style="text-align: left; background: #f8f9fa; padding: 15px 20px 15px 40px; border-radius: 8px; margin-bottom: 20px; color: #444; font-size: 14px;">
+                <li style="margin-bottom:8px;">🌐 <strong>Languages:</strong> English, 한글, 日本語 supported.</li>
+                <li style="margin-bottom:8px;">🚀 <strong>No Install:</strong> Works directly in your browser.</li>
+                <li style="margin-bottom:8px;">⌨️ <strong>Shortcuts:</strong> Press <kbd>F1</kbd> to see useful shortcuts.</li>
+                <li>📧 <strong>Feedback:</strong> Found a bug? Check the bottom left sidebar.</li>
+            </ul>
 
+            <p style="font-size: 13px; color: #888;">
+                * This tool is open source and free for everyone.
+            </p>
+        </div>
+        <div class="modal-footer" style="justify-content: center;">
+            <button class="action-btn primary" id="btnCloseWelcome" style="width: 200px; padding: 12px; font-size: 15px;">
+                Start Designing 🚀
+            </button>
+        </div>
+    </div>
+</div>
         <div id="svg-wrapper">
             <svg id="mainSvg" width="800" height="600" xmlns="http://www.w3.org/2000/svg" style="background-color: #ffffff;">
                 <defs>
@@ -152,7 +258,7 @@
                         <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="1"/>
                     </pattern>
                 </defs>
-                <rect id="gridRect" width="100%" height="100%" fill="url(#gridPattern)" style="pointer-events: none; display: none;" />
+               <rect id="gridRect" x="-50000" y="-50000" width="100000" height="100000" fill="url(#gridPattern)" style="pointer-events: none; display: none;" />
                 <rect id="marqueeRect" fill="rgba(74, 144, 226, 0.1)" stroke="#4a90e2" stroke-width="1" stroke-dasharray="4 4" style="display: none; pointer-events: none;" />
                 <g id="uiLayer" style="display: none;">
                     <rect id="selectionBox" fill="transparent" stroke="#4a90e2" stroke-width="1" stroke-dasharray="4 4" pointer-events="all" style="cursor: move;"/>        
@@ -167,11 +273,13 @@
     <div class="code-area">
         <div class="code-header">
             <h3 data-i18n="codeTitle" style="color:#333; margin:0;">SVG Code</h3>
-            <div class="code-controls"> 
-                <button id="btnCopyCode" class="action-btn" data-i18n="btnCopy">📋 복사</button>
-                <button id="btnToggleView" class="action-btn" data-i18n="btnViewText">TEXT로 보기</button>
-                <button id="btnCloseCode" class="btn-close-code">×</button>
-            </div>
+<div class="code-controls"> 
+    <button id="btnCopyCode" class="action-btn" data-i18n="btnCopy">📋 복사</button>
+    
+    <button id="btnPasteCode" class="action-btn" data-i18n="btnPaste">📥 붙여넣기</button>
+    <button id="btnToggleView" class="action-btn" data-i18n="btnViewText">TEXT로 보기</button>
+    <button id="btnCloseCode" class="btn-close-code">×</button>
+</div>
         </div>
         
         <div id="codeViewer" class="code-view"></div>
@@ -231,10 +339,26 @@
                         <td><kbd>T</kbd></td>
                         <td data-i18n="d_triangle">클릭하여 삼각형 생성</td>
                     </tr>
-                    <tr>
+<tr>
                         <td data-i18n="k_group">그룹화 / 해제</td>
                         <td><kbd>Ctrl</kbd>+<kbd>G</kbd></td>
                         <td data-i18n="d_group">묶기/풀기</td>
+                    </tr>
+
+                    <tr>
+                        <td data-i18n="k_save">프로젝트 저장</td>
+                        <td><kbd>Ctrl</kbd>+<kbd>S</kbd></td>
+                        <td data-i18n="d_save">작업 원본 저장 (.json)</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_open">프로젝트 열기</td>
+                        <td><kbd>Ctrl</kbd>+<kbd>O</kbd></td>
+                        <td data-i18n="d_open">작업 불러오기</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_export">이미지 내보내기</td>
+                        <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></td>
+                        <td data-i18n="d_export">PNG 이미지 저장</td>
                     </tr>
                     <tr>
                         <td data-i18n="k_copy">복사 / 붙여넣기</td>
@@ -261,7 +385,17 @@
                         <td><kbd>[</kbd> / <kbd>]</kbd></td>
                         <td data-i18n="d_order">맨 뒤로 / 맨 앞으로</td>
                     </tr>
-                </table>
+<tr>
+                        <td data-i18n="k_zoom">확대/축소</td>
+                        <td><kbd>Wheel</kbd></td>
+                        <td data-i18n="d_zoom">마우스 휠 스크롤</td>
+                    </tr>
+                    <tr>
+                        <td data-i18n="k_pan">화면 이동</td>
+                        <td><kbd>Space</kbd> + Drag</td>
+                        <td data-i18n="d_pan">Space (누른채) + 드래그</td>
+                    </tr>
+                    </table>
             </div>
 
             <div class="help-section">
@@ -278,7 +412,22 @@
     </div>
 </div>
 
-<script src="i18n.js"></script>
-<script src="script.js"></script>
+<input type="file" id="fileInput" accept=".json" style="display: none;">
+<div id="contextMenu" class="dropdown-menu" style="position: fixed; display: none; z-index: 9999;">
+    <button class="btn-sub" id="ctxCopy">📄 복사 (C trl+C)</button>
+    <button class="btn-sub" id="ctxPaste">📋 붙여넣기 (Ctrl+V)</button>
+    <hr style="margin:4px 0; border:0; border-top:1px solid #eee;">
+    <button class="btn-sub" id="ctxGroup">🔗 그룹화 (Ctrl+G)</button>
+    <button class="btn-sub" id="ctxUngroup">💔 그룹해제</button>
+    <hr style="margin:4px 0; border:0; border-top:1px solid #eee;">
+    <button class="btn-sub" id="ctxFront">🔼 맨 앞으로</button>
+    <button class="btn-sub" id="ctxBack">🔽 맨 뒤로</button>
+    <hr style="margin:4px 0; border:0; border-top:1px solid #eee;">
+    <button class="btn-sub" id="ctxDelete" style="color:red;">🗑️ 삭제 (Del)</button>
+</div>
+
+    <script src="i18n.js"></script>
+<script src="commander.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

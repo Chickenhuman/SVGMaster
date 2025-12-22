@@ -115,8 +115,11 @@ input[type="text"], select { padding: 8px; border: 1px solid #ccc; border-radius
     box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
     background-color: white; 
     height: 100%; 
+touch-action: none; /* [추가] 터치 시 스크롤 방지 */
 }
-
+#mainSvg * {
+    vector-effect: non-scaling-stroke;
+}
 /* [style.css] 3. 캔버스 영역 섹션 내부에 추가 */
 
 .preview-line {
@@ -162,11 +165,85 @@ input[type="text"], select { padding: 8px; border: 1px solid #ccc; border-radius
    4. 코드 뷰어 영역 (PC 기본)
    ============================ */
 .code-area { 
-    width: 320px; min-width: 280px; display: flex; flex-direction: column; flex-shrink: 0; min-height: 0;
+    width: 320px; 
+    min-width: 280px; 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0; 
+    min-height: 0;
+
+    /* 겉만 둥글게 처리하고 배경은 투명하게 (헤더와 바디가 나뉘므로) */
+    background: transparent; 
+    
+    /* 애니메이션 설정 */
+    transition: width 0.3s ease, min-width 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+    overflow: hidden; 
 }
+.code-area.collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0;
+    border: none;
+}
+
+/* ▼▼▼ [디자인 변경] 하얀색 탭 스타일 헤더 ▼▼▼ */
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    
+    /* 배경을 하얀색으로 설정하여 탭 느낌 주기 */
+    background: #ffffff; 
+    border: 1px solid #ddd;
+    border-bottom: 1px solid #eee; /* 하단 구분선 */
+    border-radius: 12px 12px 0 0; /* 위쪽만 둥글게 */
+    
+    flex-shrink: 0;
+    min-height: 45px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03); /* 살짝 그림자 */
+    z-index: 2; /* 뷰어보다 위에 보이게 */
+}
+
+/* 제목 색상 (하얀 배경이니 어둡게) */
+.code-header h3 {
+    color: #333 !important;
+    font-size: 14px;
+    margin: 0;
+    font-weight: 700;
+}
+
+/* 버튼 그룹 */
+.code-controls { display: flex; gap: 6px; }
+
+/* 버튼 스타일 (밝은 테마에 맞게) */
+.code-controls .action-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #f0f2f5; /* 연한 회색 */
+    color: #555;
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    width: auto;
+    font-weight: 600;
+}
+.code-controls .action-btn:hover {
+    background: #e6e8eb;
+    color: #333;
+    border-color: #c0c4cc;
+}
+
+/* 코드 뷰어 본문 (검은색 유지) */
 .code-view { 
-    flex: 1; padding: 15px; background: var(--code-bg); color: #abb2bf; 
+    flex: 1; padding: 15px; 
+    background: var(--code-bg); /* 어두운 배경 */
+    color: #abb2bf; 
+    
+    /* 아래쪽만 둥글게 */
     border-radius: 0 0 12px 12px; 
+    
     overflow-y: auto; font-family: 'Consolas', monospace; font-size: 12px; 
     line-height: 1.6; white-space: pre-wrap; word-break: break-all;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -210,61 +287,78 @@ kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; pad
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
 }
 .code-controls { display: flex; gap: 5px; }
+/* =========================================================
+   [반응형] 모바일/태블릿 설정 (1000px 이하)
+   ========================================================= */
 
-/* 2. 모바일/태블릿 화면 설정 */
 @media (max-width: 1000px) {
     /* 레이아웃 겹침 모드 */
     .main-container { display: block; position: relative; overflow: hidden; }
+    
+    /* 캔버스 꽉 채우기 */
     .canvas-area { width: 100% !important; height: 100% !important; position: absolute; top: 0; left: 0; z-index: 1; }
 
-    /* 사이드바 (왼쪽 서랍) */
+    /* 1. 왼쪽 사이드바 (기존 유지) */
     .sidebar {
         position: absolute; top: 50px; left: 0; bottom: 0; width: 280px !important;
         z-index: 1002; box-shadow: 2px 0 15px rgba(0,0,0,0.2); border-right: 1px solid #ddd;
         transition: transform 0.3s ease; display: flex !important; height: auto !important;
         transform: translateX(0); opacity: 1 !important; padding: 20px !important;
     }
-    .sidebar.collapsed { transform: translateX(-100%); } /* 숨김 */
+    .sidebar.collapsed { transform: translateX(-100%); } /* 왼쪽으로 숨김 */
     .sidebar:not(.collapsed) { background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); }
 
-    /* 코드창 (오른쪽 서랍) */
+    /* ▼▼▼ 2. [수정됨] 오른쪽 코드창 (모바일 오버레이) ▼▼▼ */
     .code-area {
-        display: flex !important; position: absolute; top: 50px; right: 0; bottom: 0; width: 300px;
-        z-index: 1001; box-shadow: -2px 0 15px rgba(0,0,0,0.2); border-left: 1px solid #ddd;
-        transition: transform 0.3s ease; background-color: rgba(40, 44, 52, 0.95); backdrop-filter: blur(5px);
-        flex-direction: column;
+        position: absolute; 
+        top: 50px; 
+        right: 0;   /* 오른쪽에 붙임 */
+        bottom: 0; 
+        
+        /* 모바일에서는 너비 고정 */
+        width: 300px !important; 
+        min-width: 300px !important; 
+        
+        z-index: 1003; /* 사이드바보다 위에 */
+        box-shadow: -2px 0 15px rgba(0,0,0,0.2); /* 그림자 방향 반대 */
+        
+        /* 애니메이션은 transform 사용 */
+        transition: transform 0.3s ease !important; 
+        transform: translateX(0); /* 기본: 보임 */
+        opacity: 1 !important;
+        border: none;
+        
+        /* 배경 처리 (헤더 둥글기 때문에 배경 필요) */
+        background: transparent;
+        pointer-events: auto;
     }
-    .code-area.collapsed { transform: translateX(100%); } /* 숨김 */
 
-    /* 모바일용 코드창 헤더 및 버튼 (가로 배치) */
-    .code-header {
-        display: flex; flex-direction: column; gap: 10px; padding: 15px;
-        background: #f8f9fa; border-bottom: 1px solid #ddd; margin-bottom: 0;
+    /* 닫혔을 때 (모바일) - 오른쪽으로 슬라이드 아웃 */
+    .code-area.collapsed {
+        transform: translateX(105%); /* 오른쪽 화면 밖으로 이동 */
+        
+        /* PC용 스타일(width: 0)을 무력화해야 함 */
+        width: 300px !important; 
+        min-width: 300px !important;
+        opacity: 1 !important; 
+        display: flex !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
-    .code-header h3 { margin: 0; font-size: 16px; color: #333 !important; }
 
-    /* 버튼 컨테이너 가로 정렬 */
-    .code-controls { display: flex; flex-direction: row; gap: 8px; width: 100%; }
-    .code-controls .action-btn {
-        flex: 1; width: auto !important; margin: 0; padding: 8px 0;
-        display: flex; justify-content: center; align-items: center; font-size: 13px;
-    }
-
-    /* 닫기(X) 버튼 스타일 */
-    .btn-close-code {
-        display: flex !important; align-items: center; justify-content: center;
-        background: #fff; border: 1px solid #ccc; border-radius: 6px;
-        color: #555; cursor: pointer; width: 40px; flex-shrink: 0; font-size: 20px;
-    }
-    .btn-close-code:hover { background: #ffecec; border-color: #ff4757; color: #ff4757; }
-    
-    .code-view { margin-top: 0; border-radius: 0; border-top: none; }
+    /* 닫기(X) 버튼 보이기 */
+    .btn-close-code { display: block; }
 }
 
 /* 3. PC 전용 (1001px 이상) */
 @media (min-width: 1001px) {
-    /* PC에서는 코드창을 접으면 아예 공간을 차지하지 않음 */
-    .code-area.collapsed { display: none !important; }
+    /* 기존의 display: none !important; 는 애니메이션을 막으므로 제거됨 */
+    /* .code-area.collapsed { display: none !important; }  <-- 이거 삭제됨 */
+    
+    .code-area {
+        /* PC에서는 오른쪽 보더나 그림자 처리를 위해 필요시 추가 스타일 */
+        border-left: 1px solid var(--border);
+    }
 }
 
 /* 저작권 표시 (Footer) */
@@ -294,4 +388,111 @@ kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; pad
         background-color: rgba(255, 255, 255, 0.15);
         color: #fff;
     }
+}
+
+/* [수정] 선 스타일 메뉴의 옵션이 항상 보이도록 강제 설정 */
+#strokeSubMenu .btn-sub {
+    display: block !important; /* 무조건 보이게 함 */
+    color: #333;               /* 기본 글자색 */
+}
+
+/* 선택된 항목(active)은 파란 배경에 흰 글씨 */
+#strokeSubMenu .btn-sub.active {
+    display: block !important; /* 선택돼도 사라지지 않게 함 */
+    background-color: var(--primary) !important;
+    color: white !important;
+}
+
+/* =========================================================
+   [긴급 수정] 드롭다운 메뉴 시인성 및 호버 효과 복구
+   ========================================================= */
+
+/* 1. 도형 및 모든 드롭다운의 '선택된 항목(Active)' 텍스트 보임 처리 */
+/* 배경색이 확실하게 들어가도록 !important 강제 적용 */
+.dropdown-menu .btn-sub.active {
+    background-color: var(--primary) !important;  /* 진한 파란색 배경 */
+    color: #ffffff !important;                    /* 흰색 글자 (배경과 대비되어 잘 보임) */
+    border-color: var(--primary) !important;
+}
+
+/* 2. 선 스타일(실선/점선) 메뉴 마우스 오버(Hover) 효과 적용 */
+/* 지난번 추가한 ID(#strokeSubMenu) 설정이 호버 효과를 덮어쓰지 못하게 재정의 */
+#strokeSubMenu .btn-sub:hover {
+    background-color: #ffffff !important;         /* 배경은 흰색 유지 */
+    color: var(--primary) !important;             /* 글자를 파란색으로 (도형 메뉴와 동일) */
+    border-color: var(--primary) !important;      /* 테두리 파란색 */
+    cursor: pointer;
+}
+
+/* 3. 선 스타일 메뉴 기본 텍스트 색상 정리 */
+#strokeSubMenu .btn-sub {
+    color: #333; /* 평소에는 검은색 (호버 시 파란색으로 변함) */
+}
+
+/* [style.css] 색상 팔레트 스타일 */
+.palette-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+.color-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    transition: transform 0.1s, border-color 0.1s;
+}
+.color-swatch:hover {
+    transform: scale(1.2);
+    border-color: #999;
+    z-index: 1;
+}
+
+/* [style.css] 맨 아래 추가 */
+
+/* --- 후원 및 피드백 영역 --- */
+.support-area {
+    margin-top: auto; /* 사이드바 맨 아래로 밀어내기 */
+    padding: 15px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid #eee;
+}
+
+.btn-support {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-support:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* 커피 후원 버튼 (노란색 계열) */
+.btn-support.coffee {
+    background-color: #FFDD00;
+    color: #000;
+    border: 1px solid #F0D000;
+}
+
+/* 피드백 버튼 (회색 계열) */
+.btn-support.feedback {
+    background-color: #f1f3f5;
+    color: #555;
+    border: 1px solid #e9ecef;
+}
+.btn-support.feedback:hover {
+    background-color: #e9ecef;
+    color: #333;
 }
