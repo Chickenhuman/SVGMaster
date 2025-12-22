@@ -122,7 +122,7 @@ let state = {
     isErasing: false, // 지우개 상태 추가
     snap: true,      
     snapSize: 20,    
-    showGrid: false, 
+    showGrid: true, 
     selectedEls: [],
     clipboard: [],
     action: null,     
@@ -137,7 +137,7 @@ let state = {
     transform: { x:0, y:0, w:0, h:0, scaleX:1, scaleY:1, angle:0, cx:0, cy:0 },
     currentShapeType: 'rect',
     points: [],       
-viewBox: { x: 0, y: 0, w: 800, h: 600, zoom: 1 },
+viewBox: { x: 0, y: 0, w: 0, h: 0, zoom: 1 },
     isPanning: false,
     currentPath: null, 
     history: [],
@@ -518,40 +518,40 @@ ui.btns.toggle.addEventListener('click', () => {
 
 // [수정] 휠로 줌 인/아웃 (최소/최대 제한 적용)
 svg.addEventListener('wheel', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-    }
+    if (e.ctrlKey || e.metaKey) e.preventDefault();
     e.preventDefault();
 
-    // 1. 현재 줌 배율 계산 (기준 너비 800px)
-    // 뷰박스가 작을수록(w가 작을수록) 화면은 확대된 상태임
-    const currentZoom = 800 / state.viewBox.w;
-
+    // 1. 줌 방향 및 속도 결정
     const scaleFactor = 1.05;
     const direction = e.deltaY > 0 ? 1 : -1;
     const factor = direction > 0 ? scaleFactor : (1 / scaleFactor);
 
-    // 2. 예상되는 다음 줌 배율 계산
-    const nextZoom = currentZoom / factor;
+    // 2. 다음 줌 레벨 예측 및 제한 (0.1배 ~ 10배)
+    const nextZoom = state.viewBox.zoom / factor; // 줌이 커지면 viewBox는 작아져야 하므로 나눔
+    if (nextZoom < 0.1 || nextZoom > 10) return;
 
-    // 3. 줌 제한 설정 (최소 10% ~ 최대 1000% 등)
-    const minZoom = 0.1;  // 10% (축소 한계)
-    const maxZoom = 10;   // 1000% (확대 한계)
-
-    // 제한 범위를 벗어나면 줌 실행 안 함
-    if (nextZoom < minZoom || nextZoom > maxZoom) return;
-
-    // --- 기존 줌 로직 실행 ---
+    // 3. 마우스 위치를 기준으로 줌 수행 (Zoom towards mouse)
+    const pt = getPoint(e); // 마우스의 SVG 좌표
+    
+    // 공식: 새 viewBox 위치 = 마우스위치 - (마우스위치 - 옛날위치) * 팩터
+    // 간단하게: 현재 뷰박스 크기를 조절하고, 위치를 보정
+    const oldW = state.viewBox.w;
+    const oldH = state.viewBox.h;
+    
     state.viewBox.w *= factor;
     state.viewBox.h *= factor;
-    
-    // 중앙 줌 보정
-    state.viewBox.x -= (state.viewBox.w - (state.viewBox.w / factor)) / 2;
-    state.viewBox.y -= (state.viewBox.h - (state.viewBox.h / factor)) / 2;
+    state.viewBox.zoom = nextZoom; // 줌 상태 업데이트
+
+    // 마우스 포인터가 유지되도록 x, y 이동
+    // (마우스 위치에서의 비율을 유지)
+    const dx = (pt[0] - state.viewBox.x) * (factor - 1);
+    const dy = (pt[1] - state.viewBox.y) * (factor - 1);
+
+    state.viewBox.x -= dx;
+    state.viewBox.y -= dy;
 
     svg.setAttribute('viewBox', `${state.viewBox.x} ${state.viewBox.y} ${state.viewBox.w} ${state.viewBox.h}`);
 }, { passive: false });
-
 
 
 // [추가] 스페이스바 누르면 손바닥(Pan) 모드
@@ -678,20 +678,19 @@ window.addEventListener('mouseup', () => {
         updateCode();
     }
 
-    // 2. [추가됨] 드래그 선택(Marquee) 완료 처리 (이게 빠져 있었음!)
+    // 2. 드래그 선택(Marquee) 완료 처리
     if (state.action === 'selecting') {
         finishMarqueeSelection();
     }
 
-    // 3. 변형 액션(이동/크기/회전)이 끝났을 때 커맨드 기록
+    // 3. 변형 액션(이동/크기/회전)이 끝났을 때 처리
     if (state.action && ['moving', 'rotating', 'resizing', 'rotating-slider'].includes(state.action)) {
         if (state.selectedEls.length > 0) {
             const el = state.selectedEls[0];
             const endTransformValue = el.getAttribute('transform') || '';
 
-            // 값이 실제로 변했을 때만 기록
+            // 값이 실제로 변했을 때만 Undo 스택에 기록
             if (startTransformValue !== endTransformValue) {
-                // CommandManager가 없다면(script.js 하단 삭제 후) 전역 객체 사용
                 if (typeof TransformCommand !== 'undefined' && typeof commandManager !== 'undefined') {
                     const cmd = new TransformCommand(el.id, startTransformValue, endTransformValue);
                     commandManager.undoStack.push(cmd);
@@ -699,6 +698,12 @@ window.addEventListener('mouseup', () => {
                 }
             }
         }
+        
+        // ▼▼▼ [버그 수정 핵심] ▼▼▼
+        // 이동/변형이 끝났으면 UI 박스 좌표를 현재 도형 위치로 '확정' 지어야 합니다.
+        // 그래야 다음 번 드래그 때 박스가 튀지 않습니다.
+        updateUIBox(); 
+        // ▲▲▲ [수정 끝] ▲▲▲
     }
     
     // 4. 액션 및 UI 초기화
@@ -2026,21 +2031,85 @@ function updateCode() {
     highlightCode();
 }
 
+function getContentBounds() {
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+    let hasElements = false;
 
+    // SVG 내부의 유효한 도형들만 순회
+    Array.from(svg.children).forEach(child => {
+        // UI 요소, 그리드, 숨겨진 선 등은 계산에서 제외
+        if (child.classList.contains("preview-line") || 
+            ['uiLayer', 'marqueeRect', 'gridRect', 'gridPattern'].includes(child.id) || 
+            child.tagName === 'defs' ||
+            child.style.display === 'none') return;
+
+        hasElements = true;
+        
+        // 도형의 경계상자(BBox) 가져오기
+        try {
+            const bbox = child.getBBox();
+            // transform이 적용된 경우까지 고려하려면 getBoundingClientRect를 써야 하지만,
+            // SVG 내부 export를 위해서는 getBBox() 후 transform 계산이 필요함.
+            // 하지만 간단히 구현하기 위해 여기서는 각 요소의 좌표를 대략적으로 확인합니다.
+            
+            // 더 정확한 방법: getBoundingClientRect를 쓰고 역산하거나, 
+            // SVG의 getBBox()는 transform 적용 전이라 정확하지 않을 수 있음.
+            // 여기서는 가장 확실한 방법인 "화면상 위치(Client Rect)"를 SVG 좌표로 변환하여 계산합니다.
+            
+            const rect = child.getBoundingClientRect();
+            const svgRect = svg.getBoundingClientRect();
+            
+            // 화면 좌표 -> SVG 내부 좌표 변환 (줌/팬 고려)
+            const ctmInverse = svg.getScreenCTM().inverse();
+            
+            let pt1 = svg.createSVGPoint();
+            pt1.x = rect.left; pt1.y = rect.top;
+            pt1 = pt1.matrixTransform(ctmInverse);
+
+            let pt2 = svg.createSVGPoint();
+            pt2.x = rect.right; pt2.y = rect.bottom;
+            pt2 = pt2.matrixTransform(ctmInverse);
+
+            minX = Math.min(minX, pt1.x);
+            minY = Math.min(minY, pt1.y);
+            maxX = Math.max(maxX, pt2.x);
+            maxY = Math.max(maxY, pt2.y);
+            
+        } catch (e) { console.warn(e); }
+    });
+
+    // 그려진 게 없으면 기본값 (0,0, 800,600) 반환
+    if (!hasElements) {
+        return { x: 0, y: 0, w: 800, h: 600 };
+    }
+
+    // 여백(Padding) 20px 추가
+    const padding = 20;
+    return {
+        x: minX - padding,
+        y: minY - padding,
+        w: (maxX - minX) + (padding * 2),
+        h: (maxY - minY) + (padding * 2)
+    };
+}
+// 2. [수정됨] PNG 다운로드 (Auto-Crop)
 function downloadImage() {
-    let rawHtml = `<svg width="800" height="600" style="${svg.getAttribute("style")}" xmlns="http://www.w3.org/2000/svg">\n`;
+    // 그려진 영역 계산
+    const bounds = getContentBounds();
+    const w = Math.ceil(bounds.w);
+    const h = Math.ceil(bounds.h);
+
+    // viewBox를 그려진 영역에 딱 맞춤
+    let rawHtml = `<svg width="${w}" height="${h}" viewBox="${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}" style="${svg.getAttribute("style")}" xmlns="http://www.w3.org/2000/svg">\n`;
     
-    // SVG 내부 요소들을 순회하며 복제 (그리드, UI 레이어 등 제외)
     Array.from(svg.children).forEach(child => {
         if (child.classList.contains("preview-line") || 
-            child.id === 'uiLayer' || 
-            child.id === 'marqueeRect' || 
-            child.id === 'gridRect' || 
+            ['uiLayer', 'marqueeRect', 'gridRect'].includes(child.id) || 
             child.tagName === 'defs') return;
            
         let c = child.cloneNode();
-        c.classList.remove("selection-highlight");
-        c.classList.remove("cursor-move");
+        c.classList.remove("selection-highlight", "cursor-move");
         rawHtml += `  ${c.outerHTML}\n`;
     });
     
@@ -2048,31 +2117,38 @@ function downloadImage() {
     
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    const img = new Image();
-    canvas.width = 800; 
-    canvas.height = 600;
+    
+    canvas.width = w; 
+    canvas.height = h;
     
     const svgBlob = new Blob([rawHtml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
     
     img.onload = function () {
         ctx.fillStyle = svg.style.backgroundColor || "white";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, w, h);
+        
         const a = document.createElement("a");
         a.href = canvas.toDataURL("image/png");
-        a.download = "svg_master.png";
+        a.download = `svg_master_${Date.now()}.png`;
         a.click();
         URL.revokeObjectURL(url);
     };
     img.src = url;
 }
-// [추가] 진짜 SVG 파일로 다운로드하기
+
+// 3. [수정됨] SVG 다운로드 (Auto-Crop)
 function downloadSVGFile() {
-    // 현재 에디터 내용을 깔끔한 SVG 코드로 정리
-    let rawHtml = `<svg width="800" height="600" style="${svg.getAttribute("style")}" xmlns="http://www.w3.org/2000/svg">\n`;
+    // 그려진 영역 계산
+    const bounds = getContentBounds();
+    const w = Math.ceil(bounds.w);
+    const h = Math.ceil(bounds.h);
+
+    // SVG 헤더에 계산된 viewBox 적용
+    let rawHtml = `<svg width="${w}" height="${h}" viewBox="${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}" style="${svg.getAttribute("style")}" xmlns="http://www.w3.org/2000/svg">\n`;
     
-    // 불필요한 UI 요소 제외하고 순수 도형만 추출
     Array.from(svg.children).forEach(child => {
         if (child.classList.contains("preview-line") || 
             ['uiLayer', 'marqueeRect', 'gridRect', 'gridPattern'].includes(child.id) || 
@@ -2088,10 +2164,11 @@ function downloadSVGFile() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "design.svg";
+    a.download = `design_${Date.now()}.svg`;
     a.click();
     URL.revokeObjectURL(url);
 }
+
 // [script.js] 기능 구현 섹션 - 그룹화 관련 함수 추가
 
 function groupSelected() {
@@ -2276,9 +2353,17 @@ if (ui.btns.toggleSidebar) {
         const sidebar = document.querySelector('.sidebar');
         sidebar.classList.toggle('collapsed');
         
-        // 아이콘 방향 바꾸기 (◀ -> ▶)
         const isClosed = sidebar.classList.contains('collapsed');
         ui.btns.toggleSidebar.textContent = isClosed ? "▶" : "◀";
+
+        // ▼▼▼ [추가] 애니메이션(0.3s) 동안 부드럽게, 그리고 끝난 후 확실하게 리사이즈 ▼▼▼
+        setTimeout(resizeCanvas, 300); // 애니메이션 종료 후 실행
+        // (선택사항) 애니메이션 중에도 부드럽게 하고 싶다면 아래 코드 추가
+        // let start = Date.now();
+        // let timer = setInterval(() => {
+        //     if(Date.now() - start > 350) clearInterval(timer);
+        //     resizeCanvas();
+        // }, 20);
     });
 }
 
@@ -2925,3 +3010,30 @@ if (btnCloseWelcome) {
         localStorage.setItem('svgMasterVisited', 'true');
     });
 }
+
+// [script.js] 기능 구현 섹션 또는 맨 아래
+
+// --- [캔버스 리사이즈 (반응형 처리)] ---
+function resizeCanvas() {
+    const parent = svg.parentElement; // #svg-wrapper
+    if (!parent) return;
+
+    // 1. 현재 컨테이너의 실제 크기 가져오기
+    const { clientWidth, clientHeight } = parent;
+
+    // 2. 현재 줌 레벨 유지하면서 viewBox 크기 갱신
+    // (줌이 1배율이면 viewBox = clientSize, 2배율이면 viewBox = clientSize / 2)
+    state.viewBox.w = clientWidth / state.viewBox.zoom;
+    state.viewBox.h = clientHeight / state.viewBox.zoom;
+
+    // 3. SVG 속성 업데이트
+    svg.setAttribute('viewBox', `${state.viewBox.x} ${state.viewBox.y} ${state.viewBox.w} ${state.viewBox.h}`);
+}
+
+// 3) 페이지 로드 및 리사이즈 시 실행
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('DOMContentLoaded', () => {
+    // 초기 로드 시 캔버스 크기 맞춤
+    state.viewBox.zoom = 1; // 줌 초기화
+    resizeCanvas();
+});

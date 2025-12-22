@@ -147,7 +147,6 @@
             <button id="btnToggleSidebar" class="btn-icon" data-i18n-title="t_sidebar" title="사이드바 토글">◀</button>
          <button class="btn-icon active" id="btnToggleCode" data-i18n-title="t_code" title="코드창 토글">📜</button> 
             <div class="v-divider"></div>
-            
             <button class="btn-icon active btn-tool" id="toolDraw" data-mode="draw" data-i18n-title="t_draw" title="그리기">✏️</button>
             <div class="dropdown-container">
                 <button class="btn-icon btn-tool" id="toolStroke" data-i18n-title="t_stroke" title="선 스타일">➖</button>
@@ -182,7 +181,7 @@
                 </div>
             </div>
         
-            <button class="btn-icon" id="btnGrid" data-i18n-title="t_grid" title="그리드">▦</button>
+            <button class="btn-icon active" id="btnGrid" data-i18n-title="t_grid" title="그리드">▦</button>
             <button class="btn-icon active" id="btnSnap" data-i18n-title="t_snap" title="스냅" style="width:auto; padding:0 10px; font-size:12px;">🧲 On</button>
             
             <div class="v-divider"></div>
@@ -258,13 +257,13 @@
     </div>
 </div>
         <div id="svg-wrapper">
-            <svg id="mainSvg" width="800" height="600" xmlns="http://www.w3.org/2000/svg" style="background-color: #ffffff;">
+<svg id="mainSvg" xmlns="http://www.w3.org/2000/svg" style="background-color: #ffffff;">
                 <defs>
                     <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
                         <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="1"/>
                     </pattern>
                 </defs>
-               <rect id="gridRect" x="-50000" y="-50000" width="100000" height="100000" fill="url(#gridPattern)" style="pointer-events: none; display: none;" />
+               <rect id="gridRect" x="-50000" y="-50000" width="100000" height="100000" fill="url(#gridPattern)" style="pointer-events: none; display: block;" />
                 <rect id="marqueeRect" fill="rgba(74, 144, 226, 0.1)" stroke="#4a90e2" stroke-width="1" stroke-dasharray="4 4" style="display: none; pointer-events: none;" />
                 <g id="uiLayer" style="display: none;">
                     <rect id="selectionBox" fill="transparent" stroke="#4a90e2" stroke-width="1" stroke-dasharray="4 4" pointer-events="all" style="cursor: move;"/>        
