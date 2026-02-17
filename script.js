@@ -3,7 +3,6 @@
 // ==========================================
 const svg = document.getElementById('mainSvg');
 let isThrottled = false; // <--- 여기에 추가하세요! (전역 변수로 선언)
-let startTransformValue = ""; // [추가]
 let savedToolState = null; // 선택 전 도구 설정 저장용
 // 그리기 미리보기 선
 const previewLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -686,19 +685,10 @@ window.addEventListener('mouseup', () => {
     // 3. 변형 액션(이동/크기/회전)이 끝났을 때 처리
     if (state.action && ['moving', 'rotating', 'resizing', 'rotating-slider'].includes(state.action)) {
         if (state.selectedEls.length > 0) {
-            const el = state.selectedEls[0];
-            const endTransformValue = el.getAttribute('transform') || '';
-
-            // 값이 실제로 변했을 때만 Undo 스택에 기록
-            if (startTransformValue !== endTransformValue) {
-                if (typeof TransformCommand !== 'undefined' && typeof commandManager !== 'undefined') {
-                    const cmd = new TransformCommand(el.id, startTransformValue, endTransformValue);
-                    commandManager.undoStack.push(cmd);
-                    commandManager.redoStack = []; 
-                }
-            }
+            saveHistory();
+            updateCode();
         }
-        
+
         // ▼▼▼ [버그 수정 핵심] ▼▼▼
         // 이동/변형이 끝났으면 UI 박스 좌표를 현재 도형 위치로 '확정' 지어야 합니다.
         // 그래야 다음 번 드래그 때 박스가 튀지 않습니다.
@@ -877,6 +867,8 @@ case 't': document.getElementById('toolText').click(); break; // [변경] 삼각
                 el.setAttribute('transform', str);
             });
             updateUIBox();
+            saveHistory();
+            updateCode();
         }
     }
 });
@@ -1288,9 +1280,6 @@ ensureId(el);
         return { tx, ty, sx, sy, angle };
     });
 
-if (state.selectedEls.length > 0) {
-        startTransformValue = state.selectedEls[0].getAttribute('transform') || '';
-    }
 }
 
 // [최종 수정] Transform 실행 (점 편집 Matrix + 리사이즈/회전 중심점 좌표 보정)
@@ -1857,15 +1846,7 @@ function convertToPath(el) {
 // [script.js] undo 함수 교체
 
 function undo() {
-    // 1순위: 커맨드 매니저에게 처리를 요청 (이동/변형 등)
-    // commandManager.undo()가 성공(true)하면 여기서 종료
-    if (commandManager.undo()) {
-        updateUIBox();
-        updateCode();
-        return;
-    }
-
-    // 2순위: 그리기 중 취소 (ESC와 유사)
+    // 1순위: 그리기 중 취소 (ESC와 유사)
     if (state.isDrawing) {
         if (state.points.length > 1) {
             state.points.pop();
@@ -1883,7 +1864,7 @@ function undo() {
         return;
     }
 
-    // 3순위: 기존 스냅샷 방식 Undo (생성, 삭제, 색상변경 등)
+    // 2순위: 스냅샷 방식 Undo (생성, 삭제, 스타일, 변형 등)
     if (state.history.length > 1) {
         const current = state.history.pop(); // 현재 상태 제거
         state.redoStack.push(current);       // Redo 스택으로 이동
@@ -1895,14 +1876,7 @@ function undo() {
 
 // [신규] Redo 함수
 function redo() {
-    // 1순위: 커맨드 매니저 (이동/변형 복구)
-    if (commandManager.redo()) {
-        updateUIBox();
-        updateCode();
-        return;
-    }
-
-    // 2순위: 기존 스냅샷 방식 Redo
+    // 스냅샷 방식 Redo
     if (state.redoStack.length === 0) return;
 
     const nextState = state.redoStack.pop();
@@ -2302,6 +2276,86 @@ function copyCodeToClipboard() {
     });
 }
 
+const SVG_ALLOWED_TAGS = new Set([
+    'svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line',
+    'polyline', 'polygon', 'text', 'tspan', 'defs', 'lineargradient',
+    'radialgradient', 'stop', 'clippath', 'mask', 'pattern', 'use',
+    'image', 'title', 'desc'
+]);
+
+const SVG_ALLOWED_ATTRS = new Set([
+    'id', 'class', 'd', 'points', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
+    'cx', 'cy', 'r', 'rx', 'ry', 'width', 'height', 'viewBox',
+    'transform', 'fill', 'fill-opacity', 'fill-rule', 'stroke',
+    'stroke-width', 'stroke-opacity', 'stroke-linecap', 'stroke-linejoin',
+    'stroke-dasharray', 'stroke-dashoffset', 'opacity', 'font-size',
+    'font-family', 'font-weight', 'text-anchor', 'dominant-baseline',
+    'preserveAspectRatio', 'xmlns', 'xmlns:xlink', 'href', 'xlink:href',
+    'gradientUnits', 'gradientTransform', 'offset', 'stop-color',
+    'stop-opacity', 'clip-path', 'clipPathUnits', 'mask', 'maskUnits',
+    'maskContentUnits', 'patternUnits', 'patternTransform', 'style'
+]);
+
+function isSafeUrl(value) {
+    const raw = (value || '').trim().toLowerCase();
+    if (!raw) return true;
+    if (raw.startsWith('#')) return true;
+    if (raw.startsWith('data:image/')) return true;
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return true;
+    return false;
+}
+
+function sanitizeStyleValue(styleValue) {
+    const low = (styleValue || '').toLowerCase();
+    if (low.includes('javascript:') || low.includes('expression(')) return '';
+    return styleValue;
+}
+
+function sanitizeSvgNode(node) {
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    const tag = node.tagName.toLowerCase();
+    if (!SVG_ALLOWED_TAGS.has(tag)) {
+        node.remove();
+        return false;
+    }
+
+    Array.from(node.attributes).forEach(attr => {
+        const name = attr.name.toLowerCase();
+        const value = attr.value;
+
+        if (name.startsWith('on')) {
+            node.removeAttribute(attr.name);
+            return;
+        }
+
+        if (!SVG_ALLOWED_ATTRS.has(name) && !name.startsWith('data-')) {
+            node.removeAttribute(attr.name);
+            return;
+        }
+
+        if ((name === 'href' || name === 'xlink:href') && !isSafeUrl(value)) {
+            node.removeAttribute(attr.name);
+            return;
+        }
+
+        if (name === 'style') {
+            const safe = sanitizeStyleValue(value);
+            if (!safe) node.removeAttribute(attr.name);
+            else node.setAttribute(attr.name, safe);
+        }
+    });
+
+    Array.from(node.children).forEach(child => sanitizeSvgNode(child));
+    return true;
+}
+
+function sanitizeParsedSvgRoot(rootEl) {
+    if (!rootEl) return [];
+    const clones = Array.from(rootEl.children).map(node => node.cloneNode(true));
+    return clones.filter(node => sanitizeSvgNode(node));
+}
+
 // 2. [핵심] 텍스트 수정 -> 캔버스 반영 (역방향 동기화)
 function applyCodeFromTextarea(e) {
     const val = e.target.value;
@@ -2330,13 +2384,13 @@ function applyCodeFromTextarea(e) {
 
     // 4. 파싱된 새 도형들을 캔버스에 추가
     // doc.documentElement는 <svg> 태그 자체이므로 그 자식들을 가져옴
-    Array.from(doc.documentElement.children).forEach(node => {
+    const safeNodes = sanitizeParsedSvgRoot(doc.documentElement);
+    safeNodes.forEach(node => {
         // 복붙한 코드 안에 그리드나 UI 요소가 포함되어 있을 수 있으므로 필터링
         if (protectedIds.includes(node.id) || node.tagName === 'defs') return;
 
         // UI 레이어(marquee) 바로 앞에 삽입하여 UI가 항상 위에 오도록 함
-        const newNode = node.cloneNode(true);
-        svg.insertBefore(newNode, ui.inputs.marquee);
+        svg.insertBefore(node, ui.inputs.marquee);
     });
 
     // 5. 상태 초기화 (선택 해제 등)
@@ -2837,8 +2891,9 @@ function loadProject(data) {
         // SVG 네임스페이스를 명시하여 파싱
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
         const doc = parser.parseFromString(svgString, "image/svg+xml");
-        
-        Array.from(doc.documentElement.children).forEach(node => {
+
+        const safeNodes = sanitizeParsedSvgRoot(doc.documentElement);
+        safeNodes.forEach(node => {
             // 파싱된 노드를 현재 문서로 가져와서 삽입
             const newNode = document.importNode(node, true);
             svg.insertBefore(newNode, ui.inputs.marquee);
@@ -2994,19 +3049,9 @@ window.addEventListener('paste', (e) => {
 const welcomeModal = document.getElementById('welcomeModal');
 const btnCloseWelcome = document.getElementById('btnCloseWelcome');
 
-// 1. 페이지 로드 시 확인
-window.addEventListener('DOMContentLoaded', () => {
-    // 로컬 스토리지에 'visited' 기록이 없으면 팝업 띄움
-    if (!localStorage.getItem('svgMasterVisited')) {
-        if (welcomeModal) welcomeModal.classList.add('show');
-    }
-});
-
-// 2. 닫기 버튼 클릭 시 (다시 보지 않음 처리)
 if (btnCloseWelcome) {
     btnCloseWelcome.addEventListener('click', () => {
         welcomeModal.classList.remove('show');
-        // 'visited' 키를 저장하여 다음 방문부터는 안 뜨게 함
         localStorage.setItem('svgMasterVisited', 'true');
     });
 }
