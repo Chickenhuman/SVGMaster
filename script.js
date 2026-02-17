@@ -11,6 +11,11 @@ let touchGesture = {
     startViewBox: null,
     anchorSvg: null
 };
+let touchSingle = {
+    startX: 0,
+    startY: 0,
+    moved: false
+};
 // 그리기 미리보기 선
 const previewLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
 previewLine.setAttribute("class", "preview-line");
@@ -233,6 +238,7 @@ function closeAllDropdowns() {
     document.getElementById('alignSubMenu').classList.remove('show');
     document.getElementById('downloadSubMenu')?.classList.remove('show');
     document.getElementById('strokeSubMenu')?.classList.remove('show'); // [추가]
+    document.getElementById('langSubMenu')?.classList.remove('show');
     closeMobileQuickPanel();
 }
 
@@ -2651,6 +2657,22 @@ if (btnLang) {
     btnLang.addEventListener('click', (e) => {
         e.stopPropagation();
         closeAllDropdowns(); // 다른 메뉴들은 닫기
+
+        if (window.innerWidth <= 1000 && langMenu) {
+            const rect = btnLang.getBoundingClientRect();
+            langMenu.style.position = 'fixed';
+            langMenu.style.top = `${Math.round(rect.bottom + 6)}px`;
+            langMenu.style.left = 'auto';
+            langMenu.style.right = `${Math.max(8, Math.round(window.innerWidth - rect.right))}px`;
+            langMenu.style.zIndex = '3500';
+        } else if (langMenu) {
+            langMenu.style.position = '';
+            langMenu.style.top = '';
+            langMenu.style.left = '';
+            langMenu.style.right = '';
+            langMenu.style.zIndex = '';
+        }
+
         langMenu.classList.toggle('show');
     });
 }
@@ -2857,6 +2879,18 @@ function handleTouch(e) {
     const touch = isEnd ? e.changedTouches[0] : e.touches[0];
     if (!touch) return;
 
+    if (isStart) {
+        touchSingle.startX = touch.clientX;
+        touchSingle.startY = touch.clientY;
+        touchSingle.moved = false;
+    }
+
+    if (isMove) {
+        const dx = touch.clientX - touchSingle.startX;
+        const dy = touch.clientY - touchSingle.startY;
+        if (Math.hypot(dx, dy) > 6) touchSingle.moved = true;
+    }
+
     const mouseType = isStart ? 'mousedown' : (isMove ? 'mousemove' : 'mouseup');
     const mouseEvent = new MouseEvent(mouseType, {
         clientX: touch.clientX,
@@ -2866,6 +2900,16 @@ function handleTouch(e) {
 
     const target = document.elementFromPoint(touch.clientX, touch.clientY) || svg;
     target.dispatchEvent(mouseEvent);
+
+    // 모바일 탭은 브라우저 기본 click 생성이 막히므로 수동으로 click을 보강
+    if (isEnd && !touchSingle.moved) {
+        const clickEvent = new MouseEvent('click', {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            bubbles: true
+        });
+        target.dispatchEvent(clickEvent);
+    }
 }
 
 // SVG 영역에 터치 리스너 등록
