@@ -334,6 +334,7 @@ function t(key) {
 
 function changeLanguage(lang) {
     currentLang = lang;
+    document.documentElement.setAttribute('lang', lang);
     
     // 1. 텍스트 내용 교체 (data-i18n)
     document.querySelectorAll('[data-i18n]').forEach(el => {

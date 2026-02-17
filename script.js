@@ -4,6 +4,13 @@
 const svg = document.getElementById('mainSvg');
 let isThrottled = false; // <--- 여기에 추가하세요! (전역 변수로 선언)
 let savedToolState = null; // 선택 전 도구 설정 저장용
+let touchGesture = {
+    active: false,
+    startDistance: 0,
+    startZoom: 1,
+    startViewBox: null,
+    anchorSvg: null
+};
 // 그리기 미리보기 선
 const previewLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
 previewLine.setAttribute("class", "preview-line");
@@ -216,6 +223,9 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('.dropdown-container')) {
         closeAllDropdowns();
     }
+    if (!e.target.closest('#mobileQuickPanel') && !e.target.closest('#mQuickMore')) {
+        closeMobileQuickPanel();
+    }
 });
 
 function closeAllDropdowns() {
@@ -223,6 +233,7 @@ function closeAllDropdowns() {
     document.getElementById('alignSubMenu').classList.remove('show');
     document.getElementById('downloadSubMenu')?.classList.remove('show');
     document.getElementById('strokeSubMenu')?.classList.remove('show'); // [추가]
+    closeMobileQuickPanel();
 }
 
 
@@ -236,6 +247,9 @@ function changeMode(newMode) {
     
     const activeBtn = document.querySelector(`.btn-tool[data-mode="${newMode}"]`);
     if(activeBtn) activeBtn.classList.add('active');
+    document.querySelectorAll('.mobile-dock-btn[data-mode]').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === newMode);
+    });
     
     // 커서 설정
     if(newMode === 'draw' || newMode === 'shape') svg.style.cursor = 'crosshair';
@@ -872,6 +886,37 @@ case 't': document.getElementById('toolText').click(); break; // [변경] 삼각
         }
     }
 });
+
+document.querySelectorAll('.mobile-dock-btn[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        closeAllDropdowns();
+        changeMode(btn.dataset.mode);
+    });
+});
+
+const mobileQuickPanel = document.getElementById('mobileQuickPanel');
+const btnMobileMore = document.getElementById('mQuickMore');
+const btnMobileSidebar = document.getElementById('mQuickSidebar');
+const btnMobileCode = document.getElementById('mQuickCode');
+const btnMobileSave = document.getElementById('mQuickSave');
+const btnMobileHelp = document.getElementById('mQuickHelp');
+
+function closeMobileQuickPanel() {
+    if (mobileQuickPanel) mobileQuickPanel.classList.remove('show');
+}
+
+if (btnMobileMore) {
+    btnMobileMore.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!mobileQuickPanel) return;
+        mobileQuickPanel.classList.toggle('show');
+    });
+}
+
+if (btnMobileSidebar) btnMobileSidebar.addEventListener('click', () => { ui.btns.toggleSidebar?.click(); closeMobileQuickPanel(); });
+if (btnMobileCode) btnMobileCode.addEventListener('click', () => { ui.btns.toggleCode?.click(); closeMobileQuickPanel(); });
+if (btnMobileSave) btnMobileSave.addEventListener('click', () => { ui.btns.downloadMenu?.click(); closeMobileQuickPanel(); });
+if (btnMobileHelp) btnMobileHelp.addEventListener('click', () => { ui.btns.help?.click(); closeMobileQuickPanel(); });
 
 // [추가] 점 편집 핸들 생성 (Vertex Handles)
 function createPointHandles(el, points) {
@@ -2618,6 +2663,11 @@ document.querySelectorAll('#langSubMenu .btn-sub').forEach(btn => {
         
         // 언어 변경 실행
         changeLanguage(lang);
+        localStorage.setItem('svgMasterLang', lang);
+        const url = new URL(window.location.href);
+        if (lang === 'en') url.searchParams.delete('lang');
+        else url.searchParams.set('lang', lang);
+        window.history.replaceState({}, '', url.toString());
         
         // 상단 버튼 텍스트 업데이트 (EN, KO, JA)
         if (langLabel) langLabel.textContent = lang.toUpperCase();
@@ -2633,13 +2683,17 @@ document.querySelectorAll('#langSubMenu .btn-sub').forEach(btn => {
 
 // 3. 페이지 로드 시 초기 설정 (기본: 영어)
 window.addEventListener('DOMContentLoaded', () => {
-    // 1) 기본 언어 'en'으로 설정
-    changeLanguage('en'); 
-    if (langLabel) langLabel.textContent = 'EN';
+    const urlLang = new URLSearchParams(window.location.search).get('lang');
+    const savedLang = localStorage.getItem('svgMasterLang');
+    const initialLang = ['en', 'ko', 'ja'].includes(urlLang) ? urlLang : (['en', 'ko', 'ja'].includes(savedLang) ? savedLang : 'en');
+
+    // 1) 초기 언어 설정
+    changeLanguage(initialLang);
+    if (langLabel) langLabel.textContent = initialLang.toUpperCase();
     
     // 2) 언어 메뉴 UI도 'English' 활성화
     document.querySelectorAll('#langSubMenu .btn-sub').forEach(b => {
-        if(b.dataset.lang === 'en') b.classList.add('active');
+        if(b.dataset.lang === initialLang) b.classList.add('active');
         else b.classList.remove('active');
     });
 
@@ -2731,29 +2785,94 @@ svg.addEventListener('mouseleave', () => {
     highlightCode(null);
 });
 
-// 터치 이벤트를 마우스 이벤트로 변환하여 핸들러 호출
-function handleTouch(e, handler) {
-    if (e.touches.length > 1) return; // 멀티터치 방지 (줌 등)
-    e.preventDefault(); // 스크롤 방지
-    
-    // 터치 좌표를 마우스 이벤트 형식으로 모킹
-    const touch = e.changedTouches[0];
-    const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
-                                      e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+// 터치 이벤트: 1손가락은 기존 조작, 2손가락은 팬/핀치줌
+function handleTouch(e) {
+    const isStart = e.type === 'touchstart';
+    const isMove = e.type === 'touchmove';
+    const isEnd = e.type === 'touchend' || e.type === 'touchcancel';
+    const touchCount = e.touches.length;
+
+    if (isStart && touchCount === 2) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const centerX = (t1.clientX + t2.clientX) / 2;
+        const centerY = (t1.clientY + t2.clientY) / 2;
+        const dx = t2.clientX - t1.clientX;
+        const dy = t2.clientY - t1.clientY;
+
+        touchGesture.active = true;
+        touchGesture.startDistance = Math.hypot(dx, dy) || 1;
+        touchGesture.startZoom = state.viewBox.zoom;
+        touchGesture.startViewBox = { ...state.viewBox };
+        touchGesture.anchorSvg = getClientToSvgPoint(centerX, centerY, touchGesture.startViewBox);
+        state.isPanning = false;
+        return;
+    }
+
+    if (touchGesture.active) {
+        if (isMove && touchCount >= 2) {
+            e.preventDefault();
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            const centerX = (t1.clientX + t2.clientX) / 2;
+            const centerY = (t1.clientY + t2.clientY) / 2;
+            const dx = t2.clientX - t1.clientX;
+            const dy = t2.clientY - t1.clientY;
+
+            const distance = Math.hypot(dx, dy) || 1;
+            const scale = distance / touchGesture.startDistance;
+            const unclampedZoom = touchGesture.startZoom * scale;
+            const nextZoom = Math.max(0.1, Math.min(10, unclampedZoom));
+            const zoomScale = nextZoom / touchGesture.startZoom;
+            const newW = touchGesture.startViewBox.w / zoomScale;
+            const newH = touchGesture.startViewBox.h / zoomScale;
+
+            const rect = svg.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const rx = (centerX - rect.left) / rect.width;
+            const ry = (centerY - rect.top) / rect.height;
+
+            state.viewBox.w = newW;
+            state.viewBox.h = newH;
+            state.viewBox.zoom = nextZoom;
+            state.viewBox.x = touchGesture.anchorSvg[0] - (rx * newW);
+            state.viewBox.y = touchGesture.anchorSvg[1] - (ry * newH);
+            svg.setAttribute('viewBox', `${state.viewBox.x} ${state.viewBox.y} ${state.viewBox.w} ${state.viewBox.h}`);
+            return;
+        }
+
+        if (isEnd && touchCount < 2) {
+            touchGesture.active = false;
+            touchGesture.startViewBox = null;
+            touchGesture.anchorSvg = null;
+            return;
+        }
+    }
+
+    if (touchCount > 1) return;
+    if (!isStart && !isMove && !isEnd) return;
+
+    e.preventDefault();
+    const touch = isEnd ? e.changedTouches[0] : e.touches[0];
+    if (!touch) return;
+
+    const mouseType = isStart ? 'mousedown' : (isMove ? 'mousemove' : 'mouseup');
+    const mouseEvent = new MouseEvent(mouseType, {
         clientX: touch.clientX,
         clientY: touch.clientY,
         bubbles: true
     });
-    
-    // 기존 핸들러에 전달하거나, 해당 타겟에 강제로 디스패치
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    if(target) target.dispatchEvent(mouseEvent);
+
+    const target = document.elementFromPoint(touch.clientX, touch.clientY) || svg;
+    target.dispatchEvent(mouseEvent);
 }
 
 // SVG 영역에 터치 리스너 등록
-svg.addEventListener('touchstart', (e) => handleTouch(e, null), {passive: false});
-svg.addEventListener('touchmove', (e) => handleTouch(e, null), {passive: false});
-svg.addEventListener('touchend', (e) => handleTouch(e, null), {passive: false});
+svg.addEventListener('touchstart', (e) => handleTouch(e), {passive: false});
+svg.addEventListener('touchmove', (e) => handleTouch(e), {passive: false});
+svg.addEventListener('touchend', (e) => handleTouch(e), {passive: false});
+svg.addEventListener('touchcancel', (e) => handleTouch(e), {passive: false});
 
 // [script.js] 맨 마지막에 추가
 
@@ -3075,10 +3194,32 @@ function resizeCanvas() {
     svg.setAttribute('viewBox', `${state.viewBox.x} ${state.viewBox.y} ${state.viewBox.w} ${state.viewBox.h}`);
 }
 
+function syncMobileLayoutOffsets() {
+    const topBar = document.querySelector('.top-bar');
+    if (!topBar) return;
+    const h = Math.ceil(topBar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--mobile-top-offset', `${h}px`);
+}
+
+function getClientToSvgPoint(clientX, clientY, viewBoxRef = state.viewBox) {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return [viewBoxRef.x, viewBoxRef.y];
+    const rx = (clientX - rect.left) / rect.width;
+    const ry = (clientY - rect.top) / rect.height;
+    return [
+        viewBoxRef.x + (rx * viewBoxRef.w),
+        viewBoxRef.y + (ry * viewBoxRef.h)
+    ];
+}
+
 // 3) 페이지 로드 및 리사이즈 시 실행
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    syncMobileLayoutOffsets();
+});
 window.addEventListener('DOMContentLoaded', () => {
     // 초기 로드 시 캔버스 크기 맞춤
     state.viewBox.zoom = 1; // 줌 초기화
     resizeCanvas();
+    syncMobileLayoutOffsets();
 });

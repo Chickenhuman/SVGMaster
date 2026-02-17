@@ -52,6 +52,29 @@ body {
 
 .sidebar h3 { margin: 0 0 10px 0; color: #333; }
 
+.seo-copy {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #eceff4;
+    border-radius: 8px;
+    background: #fafbfd;
+    white-space: normal;
+}
+
+.seo-copy h1 {
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 0 0 6px;
+    color: #222;
+}
+
+.seo-copy p {
+    margin: 0 0 6px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #586072;
+}
+
 /* 사이드바 접기 상태 */
 .sidebar.collapsed {
     width: 0 !important;
@@ -305,9 +328,41 @@ kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; pad
     /* 캔버스 꽉 채우기 */
     .canvas-area { width: 100% !important; height: 100% !important; position: absolute; top: 0; left: 0; z-index: 1; }
 
+    /* 모바일 툴바는 한 줄 가로 스크롤로 유지 */
+    .top-bar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding: 6px 10px;
+        gap: 6px;
+    }
+    .top-bar .v-divider {
+        margin: 0 4px;
+        height: 20px;
+        flex: 0 0 auto;
+    }
+    .dropdown-container { flex: 0 0 auto; }
+
+    /* 터치 타겟 확대 (권장 최소 44x44) */
+    .btn-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+    .btn-tool {
+        min-height: 44px;
+    }
+    
     /* 1. 왼쪽 사이드바 (기존 유지) */
     .sidebar {
-        position: absolute; top: 50px; left: 0; bottom: 0; width: 280px !important;
+        position: absolute;
+        top: var(--mobile-top-offset, 50px);
+        left: 0;
+        bottom: 0;
+        width: min(82vw, 320px) !important;
         z-index: 1002; box-shadow: 2px 0 15px rgba(0,0,0,0.2); border-right: 1px solid #ddd;
         transition: transform 0.3s ease; display: flex !important; height: auto !important;
         transform: translateX(0); opacity: 1 !important; padding: 20px !important;
@@ -318,13 +373,13 @@ kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; pad
     /* ▼▼▼ 2. [수정됨] 오른쪽 코드창 (모바일 오버레이) ▼▼▼ */
     .code-area {
         position: absolute; 
-        top: 50px; 
+        top: var(--mobile-top-offset, 50px);
         right: 0;   /* 오른쪽에 붙임 */
         bottom: 0; 
         
         /* 모바일에서는 너비 고정 */
-        width: 300px !important; 
-        min-width: 300px !important; 
+        width: min(92vw, 340px) !important; 
+        min-width: min(92vw, 340px) !important; 
         
         z-index: 1003; /* 사이드바보다 위에 */
         box-shadow: -2px 0 15px rgba(0,0,0,0.2); /* 그림자 방향 반대 */
@@ -345,8 +400,8 @@ kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; pad
         transform: translateX(105%); /* 오른쪽 화면 밖으로 이동 */
         
         /* PC용 스타일(width: 0)을 무력화해야 함 */
-        width: 300px !important; 
-        min-width: 300px !important;
+        width: min(92vw, 340px) !important; 
+        min-width: min(92vw, 340px) !important;
         opacity: 1 !important; 
         display: flex !important;
         padding: 0 !important;
@@ -502,4 +557,92 @@ kbd { background-color: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; pad
 .btn-support.feedback:hover {
     background-color: #e9ecef;
     color: #333;
+}
+
+.mobile-dock,
+.mobile-quick-panel {
+    display: none;
+}
+
+@media (max-width: 1000px) {
+    .mobile-dock {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        z-index: 1500;
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 6px;
+        padding: 8px;
+        border-radius: 14px;
+        border: 1px solid #d9e1ec;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .mobile-dock-btn {
+        min-height: 48px;
+        border: 1px solid #dce4ee;
+        background: #f7f9fc;
+        border-radius: 10px;
+        font-size: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: #304055;
+    }
+
+    .mobile-dock-btn span {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    .mobile-dock-btn.active {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+    }
+
+    .mobile-quick-panel {
+        position: fixed;
+        right: 10px;
+        bottom: calc(70px + env(safe-area-inset-bottom));
+        z-index: 1501;
+        padding: 8px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.97);
+        border: 1px solid #d9e1ec;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+        min-width: 160px;
+    }
+
+    .mobile-quick-panel.show {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .mobile-quick-btn {
+        min-height: 40px;
+        border: 1px solid #dce4ee;
+        border-radius: 8px;
+        background: #f7f9fc;
+        color: #2f3f55;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .canvas-area {
+        padding-bottom: calc(82px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+    }
+
+    #svg-wrapper {
+        height: calc(100% - 82px);
+    }
 }

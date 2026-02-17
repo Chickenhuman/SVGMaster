@@ -4,16 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>SVG Master - Free Online Vector Editor</title>
+    <title>SVG Master | Free Online SVG Editor, Vector Drawing & SVG Code Generator</title>
 <link rel="icon" type="image/png" href="favicon.png">
-    <meta name="description" content="Free online SVG vector editor. Draw paths, shapes, and generate SVG code instantly. No installation required. Supports English, Korean, and Japanese.">
-    <meta name="keywords" content="SVG editor, vector graphics, online tool, SVG path generator, web design, free tool, open source">
+    <meta name="description" content="SVG Master is a free online SVG editor for vector drawing, path editing, and instant SVG code generation. Create shapes, text, and icons in your browser.">
+    <meta name="keywords" content="online SVG editor, SVG code generator, vector editor, SVG path editor, free vector drawing tool, browser SVG tool, icon maker">
     <meta name="author" content="ChickenHuman">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <link rel="canonical" href="https://chickenhuman.github.io/SVGMaster/">
 
     <meta property="og:title" content="SVG Master - Free Online Vector Editor">
-    <meta property="og:description" content="Draw SVGs and generate code directly in your browser. No install needed.">
+    <meta property="og:description" content="Draw SVG paths, shapes, and text. Generate clean SVG code directly in your browser.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://chickenhuman.github.io/SVGMaster/">
+    <meta property="og:image" content="https://chickenhuman.github.io/SVGMaster/favicon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SVG Master - Free Online SVG Editor">
+    <meta name="twitter:description" content="Create vector graphics and export SVG or PNG in your browser.">
+    <meta name="twitter:image" content="https://chickenhuman.github.io/SVGMaster/favicon.png">
+    <link rel="alternate" hreflang="x-default" href="https://chickenhuman.github.io/SVGMaster/">
+    <link rel="alternate" hreflang="en" href="https://chickenhuman.github.io/SVGMaster/">
+    <link rel="alternate" hreflang="ko" href="https://chickenhuman.github.io/SVGMaster/?lang=ko">
+    <link rel="alternate" hreflang="ja" href="https://chickenhuman.github.io/SVGMaster/?lang=ja">
     <link rel="stylesheet" href="style.css">
 <meta name="google-site-verification" content="pHeJbWpB4eAFa8e8KMw_OmCbVpTTO7duQrptJ_CSE60" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "SVG Master",
+  "url": "https://chickenhuman.github.io/SVGMaster/",
+  "applicationCategory": "DesignApplication",
+  "operatingSystem": "Web Browser",
+  "inLanguage": ["en", "ko", "ja"],
+  "description": "Free online SVG editor for vector drawing, path editing, and SVG code generation.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "creator": {
+    "@type": "Person",
+    "name": "ChickenHuman"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is SVG Master?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SVG Master is a free online SVG editor for drawing vector graphics and exporting SVG or PNG files."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to install any software?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. SVG Master runs directly in your web browser without installation."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I generate SVG code instantly?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The app updates SVG code in real time while you edit shapes, paths, and text."
+      }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -127,6 +193,11 @@
 </div>
 
         <div class="app-footer">
+            <div class="seo-copy">
+                <h1>SVG Master: Free Online SVG Editor</h1>
+                <p>Draw vector graphics, edit SVG paths, and export clean SVG or PNG directly in your browser.</p>
+                <p>Use this SVG editor for icons, logos, web illustrations, and quick UI assets without installing design software.</p>
+            </div>
             <small data-i18n="msg_copyright">© 2025 ChickenHuman. All rights reserved.</small>
             <br>Last updated : 2025.12.22
             <br>Ver 1.0 (Beta)
@@ -290,6 +361,22 @@
         <div id="codeViewer" class="code-view"></div>
         <textarea id="codeText" class="code-view" style="display:none;"></textarea>
     </div>
+</div>
+
+<div id="mobileQuickPanel" class="mobile-quick-panel" aria-hidden="true">
+    <button type="button" class="mobile-quick-btn" id="mQuickSidebar">🧰 Panel</button>
+    <button type="button" class="mobile-quick-btn" id="mQuickCode">📜 Code</button>
+    <button type="button" class="mobile-quick-btn" id="mQuickSave">💾 Save</button>
+    <button type="button" class="mobile-quick-btn" id="mQuickHelp">❓ Help</button>
+</div>
+
+<div id="mobileDock" class="mobile-dock" aria-label="Mobile quick tools">
+    <button type="button" class="mobile-dock-btn active" data-mode="draw">✏️<span>Draw</span></button>
+    <button type="button" class="mobile-dock-btn" data-mode="select">👆<span>Select</span></button>
+    <button type="button" class="mobile-dock-btn" data-mode="shape">📐<span>Shape</span></button>
+    <button type="button" class="mobile-dock-btn" data-mode="text">T<span>Text</span></button>
+    <button type="button" class="mobile-dock-btn" data-mode="eraser">🧹<span>Erase</span></button>
+    <button type="button" class="mobile-dock-btn" id="mQuickMore">⋯<span>More</span></button>
 </div>
 
 <div id="helpModal" class="modal-overlay">
